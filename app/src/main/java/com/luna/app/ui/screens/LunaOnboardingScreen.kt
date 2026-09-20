@@ -33,6 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luna.app.R
 import com.luna.app.data.preferences.AppThemeMode
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.TextStyle
+import com.luna.app.ui.theme.LunaColorPalette
 import com.luna.app.ui.theme.LunaTheme
 
 @Composable
@@ -252,31 +257,12 @@ fun LunaOnboardingScreen(
                             )
                             Spacer(modifier = Modifier.height(28.dp))
 
-                            OutlinedTextField(
+                            LunaNameInputField(
                                 value = nameInput,
                                 onValueChange = { nameInput = it },
-                                label = { Text("Your Name", color = if (nameInput.isNotBlank()) palette.accent else palette.textSecondary) },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                                keyboardActions = KeyboardActions(onNext = { if (nameInput.isNotBlank()) currentStep = 2 }),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = palette.textPrimary,
-                                    unfocusedTextColor = palette.textPrimary,
-                                    focusedContainerColor = palette.surfaceVariant,
-                                    unfocusedContainerColor = palette.surfaceVariant,
-                                    focusedBorderColor = palette.accent,
-                                    unfocusedBorderColor = if (isDark) palette.accent.copy(alpha = 0.5f) else Color(0xFF94A3B8),
-                                    focusedLabelColor = palette.accent,
-                                    unfocusedLabelColor = palette.textSecondary
-                                ),
-                                modifier = Modifier
-                                    .fillMaxWidth(0.88f)
-                                    .border(
-                                        width = 1.5.dp,
-                                        color = if (isDark) palette.accent.copy(alpha = 0.4f) else Color(0xFF94A3B8),
-                                        shape = RoundedCornerShape(16.dp)
-                                    )
+                                onDone = { if (nameInput.isNotBlank()) currentStep = 2 },
+                                palette = palette,
+                                isDark = isDark
                             )
 
                             if (nameInput.isNotBlank()) {
@@ -669,6 +655,97 @@ private fun ThemeCard(
                     tint = palette.accent,
                     modifier = Modifier.size(20.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LunaNameInputField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onDone: () -> Unit,
+    palette: LunaColorPalette,
+    isDark: Boolean
+) {
+    val glassBg = if (isDark) Color(0x331E293B) else Color(0xFFF1F5F9)
+    val borderColor = if (value.isNotBlank()) palette.accent else (if (isDark) Color(0x40FFFFFF) else Color(0xFFCBD5E1))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth(0.88f)
+            .height(58.dp)
+            .shadow(
+                elevation = if (value.isNotBlank()) 6.dp else 1.dp,
+                shape = RoundedCornerShape(18.dp),
+                ambientColor = if (isDark) Color.Black else Color(0x15000000),
+                spotColor = if (value.isNotBlank()) palette.accent.copy(alpha = 0.25f) else Color.Transparent
+            )
+            .clip(RoundedCornerShape(18.dp))
+            .background(glassBg)
+            .border(
+                width = if (value.isNotBlank()) 1.8.dp else 1.2.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Person,
+                contentDescription = null,
+                tint = if (value.isNotBlank()) palette.accent else palette.textSecondary,
+                modifier = Modifier.size(22.dp)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                if (value.isEmpty()) {
+                    Text(
+                        text = "Enter your name...",
+                        color = palette.textSecondary.copy(alpha = 0.7f),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Normal
+                    )
+                }
+
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = palette.textPrimary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    cursorBrush = SolidColor(palette.accent),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(onNext = { onDone() }),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (value.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isDark) Color(0x33FFFFFF) else Color(0x20000000))
+                        .clickable { onValueChange("") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Clear",
+                        tint = palette.textSecondary,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
             }
         }
     }
