@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Luna</string>
+    <string name="app_tagline">A humane to-do list</string>
+    <string name="filter_today">Today</string>
+    <string name="filter_tomorrow">Tomorrow</string>
+    <string name="filter_upcoming">Upcoming</string>
+    <string name="filter_all">All</string>
+    <string name="filter_done">Completed</string>
+    <string name="app_author" translatable="false">Dr. Mohamed Elsayed (Asmodeus-OOS)</string>
+    <string name="app_copyright" translatable="false">Copyright © 2026 Dr. Mohamed Elsayed (Asmodeus-OOS). All Rights Reserved.</string>
+</resources>
