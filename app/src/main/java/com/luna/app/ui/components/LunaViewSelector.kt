@@ -50,7 +50,7 @@ fun LunaViewSelector(
         AppViewMode.entries.forEach { mode ->
             val isSelected = mode == selectedView
 
-            val unselectedBg = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.85f) else Color(0x24FFFFFF)
+            val unselectedBg = if (isLight) Color(0xFFE4E4E8) else Color(0x24FFFFFF)
             val bgColor by animateColorAsState(
                 targetValue = if (isSelected) palette.accent else unselectedBg,
                 animationSpec = tween(150),
@@ -58,7 +58,7 @@ fun LunaViewSelector(
             )
 
             val textColor by animateColorAsState(
-                targetValue = if (isSelected) palette.chipTextSelected else palette.textSecondary,
+                targetValue = if (isSelected) palette.chipTextSelected else (if (isLight) Color(0xFF18181B) else palette.textSecondary),
                 animationSpec = tween(150),
                 label = "viewText"
             )
@@ -71,7 +71,7 @@ fun LunaViewSelector(
                     .background(bgColor)
                     .border(
                         width = 0.8.dp,
-                        color = if (isSelected) Color.Transparent else (if (isLight) Color.White.copy(alpha = 0.9f) else Color(0x20FFFFFF)),
+                        color = if (isSelected) Color.Transparent else (if (isLight) Color(0xFFC4C4C8) else Color(0x20FFFFFF)),
                         shape = RoundedCornerShape(20.dp)
                     )
                     .clickable(

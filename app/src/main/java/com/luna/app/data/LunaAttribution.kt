@@ -11,7 +11,7 @@ object LunaAttribution {
 
     const val APP_NAME = "Luna"
     const val APP_SUBTITLE = "Task Management & Productivity Suite"
-    const val APP_VERSION = "2.1.0"
+    const val APP_VERSION = "1.0.0"
 
     const val AUTHOR_NAME = "Dr. Mohamed Elsayed (Asmodeus-OOS)"
     const val COPYRIGHT_NOTICE = "Copyright © 2026 Dr. Mohamed Elsayed (Asmodeus-OOS). All Rights Reserved."

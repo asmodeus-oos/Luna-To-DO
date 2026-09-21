@@ -70,7 +70,7 @@ data class LunaUiState(
     val goals: List<GoalEntity> = emptyList(),
     val routines: List<RoutineEntity> = emptyList(),
     val dependenciesMap: Map<Long, String> = emptyMap(),
-    val userName: String = "Mohamed",
+    val userName: String = "",
     val userAvatarPath: String = "",
     val userCoverPath: String = "",
     val coverTitle: String = "Mountains",
@@ -389,7 +389,11 @@ class TaskViewModel(
         priority: Priority = Priority.NONE,
         tags: List<String> = emptyList(),
         recurrenceRule: String = "NONE",
-        subtasks: List<String> = emptyList()
+        subtasks: List<String> = emptyList(),
+        alarmOnStart: Boolean = false,
+        alarmOnFinish: Boolean = false,
+        weeklyDay: String? = null,
+        weeklyTime: String? = null
     ) {
         viewModelScope.launch {
             val taskId = repository.addTask(
@@ -405,7 +409,11 @@ class TaskViewModel(
                 priority = priority,
                 tags = tags,
                 recurrenceRule = recurrenceRule,
-                initialSubtasks = subtasks
+                initialSubtasks = subtasks,
+                alarmOnStart = alarmOnStart,
+                alarmOnFinish = alarmOnFinish,
+                weeklyDay = weeklyDay,
+                weeklyTime = weeklyTime
             )
             if (dueDate != null && dueDate > System.currentTimeMillis()) {
                 val task = repository.getTaskById(taskId)

@@ -92,7 +92,7 @@ fun LunaHomeDashboardView(
     onDuplicateTask: (TaskWithDetails) -> Unit = {},
     onDeleteTask: (TaskWithDetails) -> Unit = {},
     completingTaskIds: Set<Long> = emptySet(),
-    userName: String = "Mohamed",
+    userName: String = "",
     userAvatarPath: String = "",
     onSetUserAvatarPath: (String) -> Unit = {},
     userCoverPath: String = "",

@@ -3,8 +3,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Luna Crescent Icon -->
+    <!-- Luna Crescent Icon (54dp diameter = 50% of 108dp icon canvas) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M54,28 A26,26 0 1,0 80,54 A20,20 0 1,1 54,28 Z" />
+        android:pathData="M54,27 A27,27 0 1,0 81,54 A20.5,20.5 0 1,1 54,27 Z" />
 </vector>

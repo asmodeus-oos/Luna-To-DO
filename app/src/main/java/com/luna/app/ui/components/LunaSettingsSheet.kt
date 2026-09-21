@@ -74,7 +74,7 @@ fun LunaSettingsSheet(
     autoDeleteCompletedDaily: Boolean,
     userCountry: String,
     userTimezone: String,
-    userName: String = "Mohamed",
+    userName: String = "",
     userAvatarPath: String = "",
     userGender: String = "BOY",
     showCoverBannerText: Boolean = true,

@@ -362,18 +362,18 @@ fun LunaTaskItem(
                 Box(
                     modifier = Modifier
                         .size(32.dp)
-                        .clip(CircleShape)
+                        .clip(RoundedCornerShape(8.dp))
                         .background(if (isLight) Color(0x14000000) else Color(0x22FFFFFF))
                         .border(
                             width = 0.8.dp,
                             brush = menuBorderBrush,
-                            shape = CircleShape
+                            shape = RoundedCornerShape(8.dp)
                         )
                         .clickable { showMenu = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = UntitledIcons.MoreVertical,
+                        imageVector = UntitledIcons.GridDots4,
                         contentDescription = "Task options",
                         tint = palette.textSecondary,
                         modifier = Modifier.size(16.dp)

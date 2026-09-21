@@ -171,7 +171,7 @@ class UserPreferencesRepository(private val context: Context) {
     }
 
     val userNameFlow: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.USER_NAME] ?: "Mohamed"
+        preferences[PreferencesKeys.USER_NAME] ?: ""
     }
 
     val userAvatarPathFlow: Flow<String> = context.dataStore.data.map { preferences ->

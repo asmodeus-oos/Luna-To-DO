@@ -35,7 +35,7 @@ import com.luna.app.data.local.entity.TaskTemplateEntity
         TaskActivityEntity::class,
         MissedReasonEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(LunaTypeConverters::class)
@@ -59,6 +59,15 @@ abstract class LunaDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : androidx.room.migration.Migration(6, 7) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN alarmOnStart INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN alarmOnFinish INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN weeklyDay TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE tasks ADD COLUMN weeklyTime TEXT DEFAULT NULL")
+            }
+        }
+
         fun getInstance(context: Context): LunaDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -66,7 +75,7 @@ abstract class LunaDatabase : RoomDatabase() {
                     LunaDatabase::class.java,
                     "luna_database.db"
                 )
-                    .addMigrations(MIGRATION_5_6)
+                    .addMigrations(MIGRATION_5_6, MIGRATION_6_7)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance

@@ -49,72 +49,108 @@ fun LunaHeader(
     val dateString = remember {
         SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
     }
+    val isLight = palette.background.red > 0.5f
+    val glassFill = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD9242429).copy(alpha = 0.82f)
+    val glassBorderBrush = Brush.verticalGradient(
+        colors = if (isLight) {
+            listOf(
+                Color.White.copy(alpha = 0.95f),
+                Color.White.copy(alpha = 0.40f),
+                Color.White.copy(alpha = 0.15f)
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.30f),
+                Color.White.copy(alpha = 0.10f),
+                Color.Transparent
+            )
+        }
+    )
 
-    Row(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = dateString.uppercase(Locale.getDefault()),
-                color = palette.textTertiary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .shadow(
+                elevation = 10.dp,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                ambientColor = if (isLight) Color(0x12000000) else Color(0x40000000),
+                spotColor = if (isLight) Color(0x18000000) else Color(0x50000000)
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.luna.app.R.drawable.ic_luna_icon_app),
-                    contentDescription = "Luna Logo",
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Luna",
-                    color = palette.textPrimary,
-                    fontSize = 30.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.5).sp
-                )
-            }
-        }
-
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+            .background(glassFill)
+            .border(
+                width = 1.dp,
+                brush = glassBorderBrush,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+            )
+    ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sound feedback toggle (Linear Volume icon)
-            HeaderIconButton(
-                onClick = onToggleSound,
-                icon = {
-                    Icon(
-                        imageVector = if (isSoundEnabled) UntitledIcons.Volume2 else UntitledIcons.VolumeX,
-                        contentDescription = "Toggle sound",
-                        tint = if (isSoundEnabled) palette.accent else palette.textTertiary,
-                        modifier = Modifier.size(19.dp)
+            Column {
+                Text(
+                    text = dateString.uppercase(Locale.getDefault()),
+                    color = palette.textTertiary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.2.sp
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.foundation.Image(
+                        painter = androidx.compose.ui.res.painterResource(id = com.luna.app.R.drawable.ic_main_icon_logo_removebg_black),
+                        contentDescription = "Luna Logo",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Luna",
+                        color = palette.textPrimary,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.5).sp
                     )
                 }
-            )
+            }
 
-            // Theme toggle: Moon for Dark/Amoled, Sun for Light (Linear Sun & Moon icons)
-            val isDark = currentTheme == AppThemeMode.DARK || currentTheme == AppThemeMode.BLACK
-            HeaderIconButton(
-                onClick = onToggleTheme,
-                icon = {
-                    Icon(
-                        imageVector = if (isDark) UntitledIcons.Moon else UntitledIcons.Sun,
-                        contentDescription = if (isDark) "Switch to light mode" else "Switch to dark mode",
-                        tint = palette.textPrimary,
-                        modifier = Modifier.size(19.dp)
-                    )
-                }
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Sound feedback toggle (Linear Volume icon)
+                HeaderIconButton(
+                    onClick = onToggleSound,
+                    icon = {
+                        Icon(
+                            imageVector = if (isSoundEnabled) UntitledIcons.Volume2 else UntitledIcons.VolumeX,
+                            contentDescription = "Toggle sound",
+                            tint = if (isSoundEnabled) palette.accent else palette.textTertiary,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                )
+
+                // Theme toggle: Moon for Dark/Amoled, Sun for Light (Linear Sun & Moon icons)
+                val isDark = currentTheme == AppThemeMode.DARK || currentTheme == AppThemeMode.BLACK
+                HeaderIconButton(
+                    onClick = onToggleTheme,
+                    icon = {
+                        Icon(
+                            imageVector = if (isDark) UntitledIcons.Moon else UntitledIcons.Sun,
+                            contentDescription = if (isDark) "Switch to light mode" else "Switch to dark mode",
+                            tint = palette.textPrimary,
+                            modifier = Modifier.size(19.dp)
+                        )
+                    }
+                )
+            }
         }
     }
 }

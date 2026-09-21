@@ -133,9 +133,16 @@ fun LunaLiquidGlassNavBar(
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
                 val totalWidth = maxWidth
                 val tabCount = 4
-                val slotWidth = totalWidth / tabCount
+                val isHomeSelected = selectedTab == LunaNavTab.HOME
+                val isTasksSelected = selectedTab == LunaNavTab.TASKS
+                val isTimersSelected = selectedTab == LunaNavTab.TIMERS
+                val isStatsSelected = selectedTab == LunaNavTab.STATS
 
-                // Animated liquid bubble position with spring physics
+                val homeWeight by animateFloatAsState(if (isHomeSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_home")
+                val tasksWeight by animateFloatAsState(if (isTasksSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_tasks")
+                val timersWeight by animateFloatAsState(if (isTimersSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_timers")
+                val statsWeight by animateFloatAsState(if (isStatsSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_stats")
+
                 val animatedIndex by animateFloatAsState(
                     targetValue = scrollPosition,
                     animationSpec = spring(
@@ -145,10 +152,11 @@ fun LunaLiquidGlassNavBar(
                     label = "liquid_bubble_pos"
                 )
 
-                // Pure monochromatic liquid bubble
-                val bubbleWidth = slotWidth - 3.dp
+                val unselectedFrac = 0.88f / 3.99f
+                val selectedFrac = 1.35f / 3.99f
+                val bubbleWidth = (totalWidth * selectedFrac) - 2.dp
                 val bubbleHeight = maxHeight - 2.dp
-                val bubbleOffsetX = (animatedIndex * slotWidth.value).dp + 1.5.dp
+                val bubbleOffsetX = (animatedIndex * totalWidth.value * unselectedFrac).dp + 1.dp
 
                 val bubbleBrush = if (isLight) {
                     Brush.verticalGradient(
@@ -212,49 +220,49 @@ fun LunaLiquidGlassNavBar(
                         icon = UntitledIcons.EstateHome,
                         label = "Home",
                         showLabel = showTabLabels,
-                        isSelected = selectedTab == LunaNavTab.HOME,
+                        isSelected = isHomeSelected,
                         isLight = isLight,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.HOME)
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(homeWeight)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.ClipboardNotes,
                         label = "Tasks",
                         showLabel = showTabLabels,
-                        isSelected = selectedTab == LunaNavTab.TASKS,
+                        isSelected = isTasksSelected,
                         isLight = isLight,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.TASKS)
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(tasksWeight)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.StopwatchTab,
                         label = "Time",
                         showLabel = showTabLabels,
-                        isSelected = selectedTab == LunaNavTab.TIMERS,
+                        isSelected = isTimersSelected,
                         isLight = isLight,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.TIMERS)
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(timersWeight)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.Target,
                         label = "Stats",
                         showLabel = showTabLabels,
-                        isSelected = selectedTab == LunaNavTab.STATS,
+                        isSelected = isStatsSelected,
                         isLight = isLight,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.STATS)
                         },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(statsWeight)
                     )
                 }
             }
@@ -341,7 +349,7 @@ private fun NavBarTabItem(
     val interactionSource = remember { MutableInteractionSource() }
 
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.10f else 1.0f,
+        targetValue = if (isSelected) 1.08f else 1.0f,
         animationSpec = spring(
             dampingRatio = 0.65f,
             stiffness = Spring.StiffnessMediumLow
@@ -349,8 +357,6 @@ private fun NavBarTabItem(
         label = "tab_icon_scale"
     )
 
-    // Monochromatic icon and label tint:
-    // Active is pure white (crisp on dark bubble in light mode, and frosted white in dark mode)
     val activeColor = Color.White
     val inactiveColor = palette.textSecondary
 
@@ -370,38 +376,29 @@ private fun NavBarTabItem(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (showLabel) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(vertical = 2.dp)
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = itemTint,
-                    modifier = Modifier
-                        .size(19.dp)
-                        .scale(iconScale)
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = label,
-                    color = itemTint,
-                    fontSize = 10.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                    maxLines = 1
-                )
-            }
-        } else {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = if (isSelected) 10.dp else 4.dp)
+        ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = itemTint,
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(18.dp)
                     .scale(iconScale)
             )
+            if (isSelected || showLabel) {
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = label,
+                    color = itemTint,
+                    fontSize = 11.sp,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1
+                )
+            }
         }
     }
 }

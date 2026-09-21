@@ -209,49 +209,84 @@ fun HomeScreen(
                         )
                     }
                     LunaNavTab.TASKS -> {
+                        val tasksIsLight = palette.background.red > 0.5f
+                        val tasksGlassFill = if (tasksIsLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD9242429).copy(alpha = 0.82f)
+                        val tasksGlassBorder = Brush.verticalGradient(
+                            colors = if (tasksIsLight) {
+                                listOf(Color.White.copy(alpha = 0.95f), Color.White.copy(alpha = 0.40f), Color.White.copy(alpha = 0.15f))
+                            } else {
+                                listOf(Color.White.copy(alpha = 0.30f), Color.White.copy(alpha = 0.10f), Color.Transparent)
+                            }
+                        )
+
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // View Mode Switcher
-                            LunaViewSelector(
-                                selectedView = uiState.selectedViewMode,
-                                onViewSelected = { mode ->
-                                    if (uiState.isHapticsEnabled) {
-                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            // Unified Liquid Glass Top Section
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                                    .shadow(
+                                        elevation = 10.dp,
+                                        shape = RoundedCornerShape(24.dp),
+                                        ambientColor = if (tasksIsLight) Color(0x12000000) else Color(0x40000000),
+                                        spotColor = if (tasksIsLight) Color(0x18000000) else Color(0x50000000)
+                                    )
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .background(tasksGlassFill)
+                                    .border(
+                                        width = 1.dp,
+                                        brush = tasksGlassBorder,
+                                        shape = RoundedCornerShape(24.dp)
+                                    )
+                            ) {
+                                Column {
+                                    // View Mode Switcher
+                                    LunaViewSelector(
+                                        selectedView = uiState.selectedViewMode,
+                                        onViewSelected = { mode ->
+                                            if (uiState.isHapticsEnabled) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                            viewModel.selectViewMode(mode)
+                                        }
+                                    )
+
+                                    if (uiState.selectedViewMode == AppViewMode.LIST) {
+                                        // Full Width Liquid Glass Search Bar & Filter Chips
+                                        LunaSmartFilterBar(
+                                            searchQuery = uiState.searchQuery,
+                                            onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                                            selectedFilter = uiState.selectedSmartFilter,
+                                            onFilterSelected = { filter ->
+                                                if (uiState.isHapticsEnabled) {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                }
+                                                viewModel.selectSmartFilter(filter)
+                                            },
+                                            counts = uiState.smartCounts,
+                                            templates = uiState.templates,
+                                            onOpenTemplates = {
+                                                if (uiState.isHapticsEnabled) {
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                }
+                                                viewModel.openTemplatesSheet()
+                                            },
+                                            onSelectTemplate = { template ->
+                                                viewModel.createFromTemplate(template)
+                                            },
+                                            onEditTemplate = { template ->
+                                                viewModel.updateTemplate(template)
+                                            },
+                                            onDeleteTemplate = { id ->
+                                                viewModel.deleteTemplate(id)
+                                            }
+                                        )
                                     }
-                                    viewModel.selectViewMode(mode)
                                 }
-                            )
+                            }
 
                             when (uiState.selectedViewMode) {
                                 AppViewMode.LIST -> {
-                                    // Full Width Liquid Glass Search Bar & Filter Chips
-                                    LunaSmartFilterBar(
-                                        searchQuery = uiState.searchQuery,
-                                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                                        selectedFilter = uiState.selectedSmartFilter,
-                                        onFilterSelected = { filter ->
-                                            if (uiState.isHapticsEnabled) {
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            }
-                                            viewModel.selectSmartFilter(filter)
-                                        },
-                                        counts = uiState.smartCounts,
-                                        templates = uiState.templates,
-                                        onOpenTemplates = {
-                                            if (uiState.isHapticsEnabled) {
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            }
-                                            viewModel.openTemplatesSheet()
-                                        },
-                                        onSelectTemplate = { template ->
-                                            viewModel.createFromTemplate(template)
-                                        },
-                                        onEditTemplate = { template ->
-                                            viewModel.updateTemplate(template)
-                                        },
-                                        onDeleteTemplate = { id ->
-                                            viewModel.deleteTemplate(id)
-                                        }
-                                    )
 
                                     if (uiState.tasks.isEmpty()) {
                                         Box(
@@ -575,7 +610,7 @@ fun HomeScreen(
                         viewModel.closeCreateSheet()
                         viewModel.openTemplatesSheet()
                     },
-                    onTaskCreated = { title, notes, subtitles, startDate, dueDate, dueTime, deadlineMode, durationValue, durationUnit, priority, tags, recurrence, subtasks ->
+                    onTaskCreated = { title, notes, subtitles, startDate, dueDate, dueTime, deadlineMode, durationValue, durationUnit, priority, tags, recurrence, subtasks, alarmOnStart, alarmOnFinish, weeklyDay, weeklyTime ->
                         viewModel.addTask(
                             title = title,
                             notes = notes,
@@ -589,7 +624,11 @@ fun HomeScreen(
                             priority = priority,
                             tags = tags,
                             recurrenceRule = recurrence,
-                            subtasks = subtasks
+                            subtasks = subtasks,
+                            alarmOnStart = alarmOnStart,
+                            alarmOnFinish = alarmOnFinish,
+                            weeklyDay = weeklyDay,
+                            weeklyTime = weeklyTime
                         )
                     }
                 )

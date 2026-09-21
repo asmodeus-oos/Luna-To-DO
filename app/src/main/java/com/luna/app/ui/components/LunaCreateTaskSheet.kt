@@ -83,7 +83,11 @@ fun LunaCreateTaskSheet(
         priority: Priority,
         tags: List<String>,
         recurrenceRule: String,
-        subtasks: List<String>
+        subtasks: List<String>,
+        alarmOnStart: Boolean,
+        alarmOnFinish: Boolean,
+        weeklyDay: String?,
+        weeklyTime: String?
     ) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -105,6 +109,16 @@ fun LunaCreateTaskSheet(
     var isAddingSubtitle by remember { mutableStateOf(false) }
     var subtasks by remember { mutableStateOf<List<String>>(emptyList()) }
     var newSubtaskInput by remember { mutableStateOf("") }
+
+    // Alarm toggles
+    var alarmOnStart by remember { mutableStateOf(false) }
+    var alarmOnFinish by remember { mutableStateOf(false) }
+
+    // Weekly day/time
+    var weeklyDay by remember { mutableStateOf<String?>(null) }
+    var weeklyTimeHour by remember { mutableIntStateOf(9) }
+    var weeklyTimeMinute by remember { mutableIntStateOf(0) }
+    var weeklyTimeIsAm by remember { mutableStateOf(true) }
 
     // Fixed Date/Time Options
     var isDateRangeMode by remember { mutableStateOf(false) }
@@ -747,6 +761,213 @@ fun LunaCreateTaskSheet(
                 }
             }
 
+            // Weekly Day & Time Picker (shown when WEEKLY is selected)
+            if (selectedRecurrence == RecurrenceType.WEEKLY) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "REPEAT ON DAY & TIME",
+                    color = palette.textTertiary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                // Day of week chips
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val days = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+                    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                    days.forEachIndexed { index, day ->
+                        val isSelected = weeklyDay == day
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (isSelected) palette.accent.copy(alpha = 0.15f)
+                                    else palette.surfaceVariant.copy(alpha = 0.4f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (isSelected) palette.accent else Color.Transparent,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .clickable { weeklyDay = if (isSelected) null else day }
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = dayLabels[index],
+                                color = if (isSelected) palette.accent else palette.textSecondary,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+                // Time picker for weekly recurrence
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "⏰",
+                        fontSize = 16.sp
+                    )
+                    // Hour stepper
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(palette.surface)
+                            .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { weeklyTimeHour = if (weeklyTimeHour >= 12) 1 else weeklyTimeHour + 1 }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "%02d".format(weeklyTimeHour),
+                            color = palette.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(text = ":", color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    // Minute stepper
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(palette.surface)
+                            .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { weeklyTimeMinute = (weeklyTimeMinute + 5) % 60 }
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = "%02d".format(weeklyTimeMinute),
+                            color = palette.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    // AM/PM toggle
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (weeklyTimeIsAm) palette.accent.copy(alpha = 0.15f) else palette.surfaceVariant)
+                            .border(1.dp, if (weeklyTimeIsAm) palette.accent else palette.borderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { weeklyTimeIsAm = !weeklyTimeIsAm }
+                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (weeklyTimeIsAm) "AM" else "PM",
+                            color = if (weeklyTimeIsAm) palette.accent else palette.textSecondary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Alarm Toggles
+            Text(
+                text = "ALARMS",
+                color = palette.textTertiary,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Alarm on Start toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (alarmOnStart) palette.accent.copy(alpha = 0.12f)
+                            else palette.surfaceVariant.copy(alpha = 0.4f)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (alarmOnStart) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { alarmOnStart = !alarmOnStart }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "🔔 Alarm when task starts",
+                        color = if (alarmOnStart) palette.accent else palette.textSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = if (alarmOnStart) FontWeight.SemiBold else FontWeight.Medium
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(width = 44.dp, height = 24.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (alarmOnStart) palette.accent else palette.surfaceVariant)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .size(20.dp)
+                                .align(if (alarmOnStart) Alignment.CenterEnd else Alignment.CenterStart)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+                // Alarm on Finish toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (alarmOnFinish) palette.accent.copy(alpha = 0.12f)
+                            else palette.surfaceVariant.copy(alpha = 0.4f)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (alarmOnFinish) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { alarmOnFinish = !alarmOnFinish }
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "🔔 Alarm when task finishes",
+                        color = if (alarmOnFinish) palette.accent else palette.textSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = if (alarmOnFinish) FontWeight.SemiBold else FontWeight.Medium
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(width = 44.dp, height = 24.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(if (alarmOnFinish) palette.accent else palette.surfaceVariant)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(2.dp)
+                                .size(20.dp)
+                                .align(if (alarmOnFinish) Alignment.CenterEnd else Alignment.CenterStart)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                        )
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.height(22.dp))
 
             // Create Task Pill Button
@@ -792,7 +1013,11 @@ fun LunaCreateTaskSheet(
                                 effectivePriority,
                                 parsed.tags,
                                 selectedRecurrence.name,
-                                subtasks
+                                subtasks,
+                                alarmOnStart,
+                                alarmOnFinish,
+                                if (selectedRecurrence == RecurrenceType.WEEKLY) weeklyDay else null,
+                                if (selectedRecurrence == RecurrenceType.WEEKLY) String.format(java.util.Locale.US, "%02d:%02d %s", if (weeklyTimeHour == 0) 12 else if (weeklyTimeHour > 12) weeklyTimeHour - 12 else weeklyTimeHour, weeklyTimeMinute, if (weeklyTimeIsAm) "AM" else "PM") else null
                             )
                             onDismiss()
                         }

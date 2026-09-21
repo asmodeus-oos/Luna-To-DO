@@ -109,8 +109,8 @@ fun LunaFocusView(
     val context = LocalContext.current
     val activeTasks = tasks.filter { !it.task.isCompleted }
 
-    var selectedTaskIndex by remember { mutableIntStateOf(0) }
-    val currentTask = activeTasks.getOrNull(selectedTaskIndex)
+    var selectedTaskIndex by remember { mutableIntStateOf(-1) }
+    val currentTask = if (selectedTaskIndex >= 0) activeTasks.getOrNull(selectedTaskIndex) else null
 
     var currentMode by remember { mutableStateOf(PomodoroMode.WORK) }
 
@@ -536,9 +536,8 @@ fun LunaFocusView(
         }
 
         // Active Focus Task Card with Custom Liquid Glass Modal Trigger
-        if (activeTasks.isNotEmpty()) {
-            val validTaskIndex = selectedTaskIndex.coerceIn(0, activeTasks.size - 1)
-            val activeTask = activeTasks.getOrNull(validTaskIndex) ?: activeTasks.first()
+        if (currentTask != null) {
+            val activeTask = currentTask
 
             Box(
                 modifier = Modifier
@@ -600,7 +599,7 @@ fun LunaFocusView(
                             .clickable {
                                 haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
                                 onCompleteTask(activeTask.task.id)
-                                selectedTaskIndex = 0
+                                selectedTaskIndex = -1
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -614,12 +613,37 @@ fun LunaFocusView(
                 }
             }
         } else {
-            Text(
-                text = "No active tasks remaining. Add a task to start focusing!",
-                color = palette.textTertiary,
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center
-            )
+            // No task selected — show general focus session card
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(palette.surface)
+                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(18.dp))
+                    .clickable {
+                        if (activeTasks.isNotEmpty()) {
+                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                            showTaskPickerModal = true
+                        }
+                    }
+                    .padding(16.dp)
+            ) {
+                Column {
+                    Text(
+                        text = if (activeTasks.isNotEmpty()) "NO TASK SELECTED ▾" else "GENERAL FOCUS",
+                        color = palette.textTertiary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = if (activeTasks.isNotEmpty()) "Tap to select a task, or run as general focus session" else "No tasks available — running as free focus session",
+                        color = palette.textSecondary,
+                        fontSize = 13.sp
+                    )
+                }
+            }
         }
 
         // Controls: Reset, Play/Pause, Skip
@@ -717,7 +741,7 @@ fun LunaFocusView(
     if (showTaskPickerModal && activeTasks.isNotEmpty()) {
         LunaTaskPickerModal(
             activeTasks = activeTasks,
-            selectedIndex = selectedTaskIndex.coerceIn(0, activeTasks.size - 1),
+            selectedIndex = if (selectedTaskIndex >= 0) selectedTaskIndex.coerceIn(0, activeTasks.size - 1) else -1,
             onSelectTask = { idx ->
                 selectedTaskIndex = idx
             },

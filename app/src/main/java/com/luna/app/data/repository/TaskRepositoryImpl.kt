@@ -67,7 +67,11 @@ class TaskRepositoryImpl(
         assignee: String?,
         goalId: Long?,
         category: String,
-        initialSubtasks: List<String>
+        initialSubtasks: List<String>,
+        alarmOnStart: Boolean,
+        alarmOnFinish: Boolean,
+        weeklyDay: String?,
+        weeklyTime: String?
     ): Long {
         val entity = TaskEntity(
             title = title.trim(),
@@ -91,7 +95,11 @@ class TaskRepositoryImpl(
             assignee = assignee,
             goalId = goalId,
             category = category,
-            createdAt = System.currentTimeMillis()
+            createdAt = System.currentTimeMillis(),
+            alarmOnStart = alarmOnStart,
+            alarmOnFinish = alarmOnFinish,
+            weeklyDay = weeklyDay,
+            weeklyTime = weeklyTime
         )
         val taskId = taskDao.insertTask(entity)
 

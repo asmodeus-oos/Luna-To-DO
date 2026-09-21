@@ -41,7 +41,11 @@ interface TaskRepository {
         assignee: String? = null,
         goalId: Long? = null,
         category: String = "General",
-        initialSubtasks: List<String> = emptyList()
+        initialSubtasks: List<String> = emptyList(),
+        alarmOnStart: Boolean = false,
+        alarmOnFinish: Boolean = false,
+        weeklyDay: String? = null,
+        weeklyTime: String? = null
     ): Long
 
     suspend fun updateTask(task: TaskEntity)

@@ -979,4 +979,17 @@ object UntitledIcons {
             lineTo(9f, 6f)
         }.build()
     }
+
+    val GridDots4: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "GridDots4",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).addPath(
+            pathData = PathParser().parsePathString("M7 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm10 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM7 16a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm10 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z").toNodes(),
+            fill = SolidColor(Color.Black)
+        ).build()
+    }
 }

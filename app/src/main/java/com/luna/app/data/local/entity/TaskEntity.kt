@@ -41,7 +41,11 @@ data class TaskEntity(
     val pausedAt: Long? = null,
     val category: String = "General",
     val createdAt: Long = System.currentTimeMillis(),
-    val orderIndex: Int = 0
+    val orderIndex: Int = 0,
+    val alarmOnStart: Boolean = false,
+    val alarmOnFinish: Boolean = false,
+    val weeklyDay: String? = null,  // e.g. "MON", "TUE", "WED"
+    val weeklyTime: String? = null  // e.g. "15:00"
 ) {
     /**
      * Total duration in milliseconds if duration mode is active

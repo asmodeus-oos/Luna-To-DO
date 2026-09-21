@@ -42,7 +42,7 @@ import com.luna.app.ui.theme.LunaTheme
 
 @Composable
 fun LunaOnboardingScreen(
-    initialName: String = "Mohamed",
+    initialName: String = "",
     initialGender: String = "BOY",
     initialCoverTitle: String = "Mountains",
     initialThemeMode: AppThemeMode = AppThemeMode.DARK,
@@ -65,7 +65,7 @@ fun LunaOnboardingScreen(
     }
 
     val brandLogoRes = if (isDark) R.drawable.ic_luna_brand_logo_dark else R.drawable.ic_luna_brand_logo_light
-    val mainIconRes = R.drawable.ic_luna_icon_app
+    val mainIconRes = R.drawable.ic_main_icon_logo_removebg_black
 
     val totalSteps = 5
 
@@ -492,7 +492,7 @@ fun LunaOnboardingScreen(
                                 currentStep += 1
                             } else {
                                 onCompleteOnboarding(
-                                    nameInput.ifBlank { "Mohamed" },
+                                    nameInput.trim(),
                                     selectedCover,
                                     selectedGender,
                                     selectedTheme
