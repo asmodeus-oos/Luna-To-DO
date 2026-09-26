@@ -226,69 +226,73 @@ fun HomeScreen(
                         )
 
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // Unified Liquid Glass Top Section
+                            // 1. View Mode Switcher Area
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 4.dp)
+                                    .padding(horizontal = 12.dp, vertical = 2.dp)
                                     .shadow(
-                                        elevation = 10.dp,
-                                        shape = RoundedCornerShape(24.dp),
-                                        ambientColor = if (tasksIsLight) Color(0x12000000) else Color(0x40000000),
-                                        spotColor = if (tasksIsLight) Color(0x18000000) else Color(0x50000000)
+                                        elevation = 6.dp,
+                                        shape = RoundedCornerShape(20.dp),
+                                        ambientColor = if (tasksIsLight) Color(0x10000000) else Color(0x30000000),
+                                        spotColor = if (tasksIsLight) Color(0x15000000) else Color(0x40000000)
                                     )
-                                    .clip(RoundedCornerShape(24.dp))
+                                    .clip(RoundedCornerShape(20.dp))
                                     .background(tasksGlassFill)
                                     .border(
                                         width = 1.dp,
                                         brush = tasksGlassBorder,
-                                        shape = RoundedCornerShape(24.dp)
+                                        shape = RoundedCornerShape(20.dp)
                                     )
                             ) {
-                                Column {
-                                    // View Mode Switcher
-                                    LunaViewSelector(
-                                        selectedView = uiState.selectedViewMode,
-                                        onViewSelected = { mode ->
+                                LunaViewSelector(
+                                    selectedView = uiState.selectedViewMode,
+                                    onViewSelected = { mode ->
+                                        if (uiState.isHapticsEnabled) {
+                                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        }
+                                        viewModel.selectViewMode(mode)
+                                    }
+                                )
+                            }
+
+                            if (uiState.selectedViewMode == AppViewMode.LIST) {
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp)
+                                ) {
+                                    LunaSmartFilterBar(
+                                        searchQuery = uiState.searchQuery,
+                                        onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                                        selectedFilter = uiState.selectedSmartFilter,
+                                        onFilterSelected = { filter ->
                                             if (uiState.isHapticsEnabled) {
                                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                             }
-                                            viewModel.selectViewMode(mode)
+                                            viewModel.selectSmartFilter(filter)
+                                        },
+                                        counts = uiState.smartCounts,
+                                        templates = uiState.templates,
+                                        onOpenTemplates = {
+                                            if (uiState.isHapticsEnabled) {
+                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                            }
+                                            viewModel.openTemplatesSheet()
+                                        },
+                                        onSelectTemplate = { template ->
+                                            viewModel.createFromTemplate(template)
+                                        },
+                                        onEditTemplate = { template ->
+                                            viewModel.updateTemplate(template)
+                                        },
+                                        onDeleteTemplate = { id ->
+                                            viewModel.deleteTemplate(id)
                                         }
                                     )
-
-                                    if (uiState.selectedViewMode == AppViewMode.LIST) {
-                                        // Full Width Liquid Glass Search Bar & Filter Chips
-                                        LunaSmartFilterBar(
-                                            searchQuery = uiState.searchQuery,
-                                            onSearchQueryChange = { viewModel.setSearchQuery(it) },
-                                            selectedFilter = uiState.selectedSmartFilter,
-                                            onFilterSelected = { filter ->
-                                                if (uiState.isHapticsEnabled) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                }
-                                                viewModel.selectSmartFilter(filter)
-                                            },
-                                            counts = uiState.smartCounts,
-                                            templates = uiState.templates,
-                                            onOpenTemplates = {
-                                                if (uiState.isHapticsEnabled) {
-                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                                }
-                                                viewModel.openTemplatesSheet()
-                                            },
-                                            onSelectTemplate = { template ->
-                                                viewModel.createFromTemplate(template)
-                                            },
-                                            onEditTemplate = { template ->
-                                                viewModel.updateTemplate(template)
-                                            },
-                                            onDeleteTemplate = { id ->
-                                                viewModel.deleteTemplate(id)
-                                            }
-                                        )
-                                    }
                                 }
+                                Spacer(modifier = Modifier.height(4.dp))
                             }
 
                             when (uiState.selectedViewMode) {

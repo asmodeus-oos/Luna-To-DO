@@ -106,7 +106,7 @@ fun LunaLiquidGlassNavBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -262,9 +262,9 @@ fun LunaLiquidGlassNavBar(
             }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
-        // Single Companion Liquid Glass Search Orb (56.dp)
+        // Single Companion Liquid Glass Search Orb (48.dp)
         // Seamlessly aligned horizontally with the capsule
         GlassOrbButton(
             icon = UntitledIcons.Search,
@@ -300,7 +300,7 @@ private fun GlassOrbButton(
 
     Box(
         modifier = modifier
-            .size(56.dp)
+            .size(48.dp)
             .shadow(
                 elevation = 16.dp,
                 shape = CircleShape,
@@ -324,7 +324,7 @@ private fun GlassOrbButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = palette.textPrimary,
-            modifier = Modifier.size(22.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }
@@ -343,7 +343,7 @@ private fun NavBarTabItem(
     val interactionSource = remember { MutableInteractionSource() }
 
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.08f else 1.0f,
+        targetValue = if (isSelected) 1.04f else 1.0f,
         animationSpec = spring(
             dampingRatio = 0.65f,
             stiffness = Spring.StiffnessMediumLow
@@ -373,24 +373,26 @@ private fun NavBarTabItem(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(horizontal = if (isSelected) 10.dp else 4.dp)
+            modifier = Modifier.padding(horizontal = 2.dp)
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
                 tint = itemTint,
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .scale(iconScale)
             )
             if (isSelected || showLabel) {
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = label,
                     color = itemTint,
-                    fontSize = 11.sp,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1
+                    fontSize = 11.5.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                    letterSpacing = (-0.2).sp,
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }

@@ -546,7 +546,7 @@ fun LunaSettingsSheet(
                             )
                         } else {
                             Text(
-                                text = coverTitle.ifBlank { "Mountains" },
+                                text = if (coverTitle.isBlank() || coverTitle == "Mountains") "Today's Date (Default)" else coverTitle,
                                 color = palette.textSecondary,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium
@@ -561,7 +561,7 @@ fun LunaSettingsSheet(
                                 .background(palette.accent)
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onSetCoverTitle(tempCoverTitleInput.trim().ifBlank { "Mountains" })
+                                    onSetCoverTitle(tempCoverTitleInput.trim().ifBlank { "" })
                                     isEditingCoverTitle = false
                                 }
                                 .padding(horizontal = 14.dp, vertical = 6.dp)

@@ -27,7 +27,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
@@ -57,7 +57,6 @@ import com.luna.app.domain.model.SmartFilter
 import com.luna.app.ui.icons.UntitledIcons
 import com.luna.app.ui.theme.LunaTheme
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LunaSmartFilterBar(
     searchQuery: String,
@@ -72,11 +71,46 @@ fun LunaSmartFilterBar(
     onDeleteTemplate: ((Long) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // Area 1: Dedicated Search Bar
+        LunaSearchBar(
+            searchQuery = searchQuery,
+            onSearchQueryChange = onSearchQueryChange
+        )
+
+        // Area 2: Dedicated Templates Area
+        LunaTemplatesBar(
+            templates = templates,
+            onOpenTemplates = onOpenTemplates,
+            onSelectTemplate = onSelectTemplate,
+            onEditTemplate = onEditTemplate,
+            onDeleteTemplate = onDeleteTemplate
+        )
+
+        // Area 3: Dedicated Smart Filters & Tags Area
+        LunaFilterTagsBar(
+            selectedFilter = selectedFilter,
+            onFilterSelected = onFilterSelected,
+            counts = counts
+        )
+    }
+}
+
+/**
+ * 🔍 Area 1: Dedicated Liquid Glass Search Bar
+ */
+@Composable
+fun LunaSearchBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val palette = LunaTheme.colors
-    val scrollState = rememberScrollState()
     val isLight = palette.background.red > 0.5f
 
-    // Specular border and glass fills
     val glassFill = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD91C1C24).copy(alpha = 0.82f)
     val glassBorderBrush = Brush.verticalGradient(
         colors = if (isLight) {
@@ -94,118 +128,165 @@ fun LunaSmartFilterBar(
         }
     )
 
-    Column(modifier = modifier.fillMaxWidth()) {
-        // Full Width Liquid Glass Search Capsule (60dp height like bottom navbar)
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 6.dp)
-                .height(60.dp)
-                .shadow(
-                    elevation = 10.dp,
-                    shape = RoundedCornerShape(30.dp),
-                    ambientColor = if (isLight) Color(0x15000000) else Color(0x40000000),
-                    spotColor = if (isLight) Color(0x20000000) else Color(0x50000000)
-                )
-                .clip(RoundedCornerShape(30.dp))
-                .background(glassFill)
-                .border(
-                    width = 1.2.dp,
-                    brush = glassBorderBrush,
-                    shape = RoundedCornerShape(30.dp)
-                )
-                .padding(horizontal = 18.dp),
-            contentAlignment = Alignment.CenterStart
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(24.dp),
+                ambientColor = if (isLight) Color(0x12000000) else Color(0x30000000),
+                spotColor = if (isLight) Color(0x18000000) else Color(0x40000000)
+            )
+            .clip(RoundedCornerShape(24.dp))
+            .background(glassFill)
+            .border(
+                width = 1.dp,
+                brush = glassBorderBrush,
+                shape = RoundedCornerShape(24.dp)
+            )
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = UntitledIcons.Search,
-                    contentDescription = "Search",
-                    tint = if (searchQuery.isNotEmpty()) palette.textPrimary else palette.textTertiary,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    textStyle = TextStyle(
-                        color = palette.textPrimary,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    cursorBrush = SolidColor(palette.accent),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = { /* done */ }),
-                    modifier = Modifier.weight(1f),
-                    decorationBox = { inner ->
-                        if (searchQuery.isEmpty()) {
-                            Text(
-                                text = "Search tasks, tags, notes...",
-                                color = palette.textTertiary,
-                                fontSize = 14.sp
-                            )
-                        }
-                        inner()
-                    }
-                )
-                if (searchQuery.isNotEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(if (isLight) Color(0x15000000) else Color(0x20FFFFFF))
-                            .clickable { onSearchQueryChange("") },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = UntitledIcons.Close,
-                            contentDescription = "Clear",
-                            tint = palette.textSecondary,
-                            modifier = Modifier.size(13.dp)
+            Icon(
+                imageVector = UntitledIcons.Search,
+                contentDescription = "Search",
+                tint = if (searchQuery.isNotEmpty()) palette.textPrimary else palette.textTertiary,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            BasicTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                textStyle = TextStyle(
+                    color = palette.textPrimary,
+                    fontSize = 13.5.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                cursorBrush = SolidColor(palette.accent),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { /* done */ }),
+                modifier = Modifier.weight(1f),
+                decorationBox = { inner ->
+                    if (searchQuery.isEmpty()) {
+                        Text(
+                            text = "Search tasks, tags, notes...",
+                            color = palette.textTertiary,
+                            fontSize = 13.5.sp
                         )
                     }
+                    inner()
+                }
+            )
+            if (searchQuery.isNotEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(if (isLight) Color(0x15000000) else Color(0x20FFFFFF))
+                        .clickable { onSearchQueryChange("") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = UntitledIcons.Close,
+                        contentDescription = "Clear",
+                        tint = palette.textSecondary,
+                        modifier = Modifier.size(12.dp)
+                    )
                 }
             }
         }
+    }
+}
 
-        // Horizontal Row with Templates + Smart Filter Chips
+/**
+ * 📑 Area 2: Dedicated Liquid Glass Templates Strip
+ */
+@Composable
+fun LunaTemplatesBar(
+    templates: List<TaskTemplateEntity> = emptyList(),
+    onOpenTemplates: (() -> Unit)? = null,
+    onSelectTemplate: ((TaskTemplateEntity) -> Unit)? = null,
+    onEditTemplate: ((TaskTemplateEntity) -> Unit)? = null,
+    onDeleteTemplate: ((Long) -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val palette = LunaTheme.colors
+    val isLight = palette.background.red > 0.5f
+    val scrollState = rememberScrollState()
+
+    val glassFill = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD91C1C24).copy(alpha = 0.82f)
+    val glassBorderBrush = Brush.verticalGradient(
+        colors = if (isLight) {
+            listOf(
+                Color.White.copy(alpha = 0.95f),
+                Color.White.copy(alpha = 0.40f),
+                Color.White.copy(alpha = 0.15f)
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.35f),
+                Color.White.copy(alpha = 0.12f),
+                Color.Transparent
+            )
+        }
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(18.dp),
+                ambientColor = if (isLight) Color(0x10000000) else Color(0x30000000),
+                spotColor = if (isLight) Color(0x15000000) else Color(0x40000000)
+            )
+            .clip(RoundedCornerShape(18.dp))
+            .background(glassFill)
+            .border(
+                width = 1.dp,
+                brush = glassBorderBrush,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 5.dp)
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .horizontalScroll(scrollState)
-                .padding(horizontal = 20.dp, vertical = 4.dp),
+                .horizontalScroll(scrollState),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Templates Shortcut Button (Crisp Liquid Glass in light mode)
+            // Main Templates Launcher Action Chip
             if (onOpenTemplates != null) {
-                val templatesGlassBg = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0x24FFFFFF)
+                val templatesGlassBg = if (isLight) Color(0xFFE4E4E8) else Color(0x30FFFFFF)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(templatesGlassBg)
                         .border(
                             width = 0.8.dp,
                             color = if (isLight) Color.White.copy(alpha = 0.90f) else Color(0x25FFFFFF),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(14.dp)
                         )
                         .clickable(onClick = onOpenTemplates)
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Rounded.PlaylistAdd,
+                            imageVector = Icons.AutoMirrored.Rounded.PlaylistAdd,
                             contentDescription = "Templates",
                             tint = palette.textPrimary,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(5.dp))
                         Text(
-                            text = "Templates",
+                            text = if (templates.isNotEmpty()) "Templates (${templates.size})" else "Templates",
                             color = palette.textPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
@@ -214,7 +295,7 @@ fun LunaSmartFilterBar(
                 }
             }
 
-            // Quick Template Chips with Long-Press Dropdown Menu
+            // Quick Template Chips
             templates.forEach { template ->
                 TemplateChipItem(
                     template = template,
@@ -225,12 +306,82 @@ fun LunaSmartFilterBar(
                 )
             }
 
-            // Smart Filter Chips
+            // If empty, quick hint to add template
+            if (templates.isEmpty() && onOpenTemplates != null) {
+                Text(
+                    text = "Tap Templates to create reusable presets",
+                    color = palette.textTertiary,
+                    fontSize = 11.5.sp,
+                    modifier = Modifier
+                        .clickable(onClick = onOpenTemplates)
+                        .padding(horizontal = 6.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 🏷️ Area 3: Dedicated Liquid Glass Tags & Smart Filters Strip
+ */
+@Composable
+fun LunaFilterTagsBar(
+    selectedFilter: SmartFilter,
+    onFilterSelected: (SmartFilter) -> Unit,
+    counts: Map<SmartFilter, Int> = emptyMap(),
+    modifier: Modifier = Modifier
+) {
+    val palette = LunaTheme.colors
+    val isLight = palette.background.red > 0.5f
+    val scrollState = rememberScrollState()
+
+    val glassFill = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD91C1C24).copy(alpha = 0.82f)
+    val glassBorderBrush = Brush.verticalGradient(
+        colors = if (isLight) {
+            listOf(
+                Color.White.copy(alpha = 0.95f),
+                Color.White.copy(alpha = 0.40f),
+                Color.White.copy(alpha = 0.15f)
+            )
+        } else {
+            listOf(
+                Color.White.copy(alpha = 0.35f),
+                Color.White.copy(alpha = 0.12f),
+                Color.Transparent
+            )
+        }
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(18.dp),
+                ambientColor = if (isLight) Color(0x10000000) else Color(0x30000000),
+                spotColor = if (isLight) Color(0x15000000) else Color(0x40000000)
+            )
+            .clip(RoundedCornerShape(18.dp))
+            .background(glassFill)
+            .border(
+                width = 1.dp,
+                brush = glassBorderBrush,
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(horizontal = 8.dp, vertical = 5.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scrollState),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             SmartFilter.entries.forEach { filter ->
                 val isSelected = filter == selectedFilter
                 val count = counts[filter] ?: 0
 
-                val unselectedFilterBg = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.85f) else Color(0x24FFFFFF)
+                val unselectedFilterBg = if (isLight) Color(0xFFE4E4E8) else Color(0x24FFFFFF)
                 val bgColor by animateColorAsState(
                     targetValue = if (isSelected) palette.accent else unselectedFilterBg,
                     animationSpec = tween(150),
@@ -238,7 +389,7 @@ fun LunaSmartFilterBar(
                 )
 
                 val textColor by animateColorAsState(
-                    targetValue = if (isSelected) palette.chipTextSelected else palette.textSecondary,
+                    targetValue = if (isSelected) palette.chipTextSelected else (if (isLight) Color(0xFF18181B) else palette.textSecondary),
                     animationSpec = tween(150),
                     label = "filterText"
                 )
@@ -247,19 +398,19 @@ fun LunaSmartFilterBar(
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(20.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(bgColor)
                         .border(
                             width = 0.8.dp,
-                            color = if (isSelected) Color.Transparent else (if (isLight) Color.White.copy(alpha = 0.90f) else Color(0x20FFFFFF)),
-                            shape = RoundedCornerShape(20.dp)
+                            color = if (isSelected) Color.Transparent else (if (isLight) Color(0xFFC4C4C8) else Color(0x20FFFFFF)),
+                            shape = RoundedCornerShape(14.dp)
                         )
                         .clickable(
                             interactionSource = interactionSource,
                             indication = null,
                             onClick = { onFilterSelected(filter) }
                         )
-                        .padding(horizontal = 12.dp, vertical = 7.dp),
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -276,7 +427,7 @@ fun LunaSmartFilterBar(
                             Box(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .background(if (isSelected) palette.chipTextSelected.copy(alpha = 0.18f) else (if (isLight) Color(0x18000000) else Color(0x30FFFFFF)))
+                                    .background(if (isSelected) palette.chipTextSelected.copy(alpha = 0.20f) else (if (isLight) Color(0x18000000) else Color(0x30FFFFFF)))
                                     .padding(horizontal = 5.dp, vertical = 1.dp)
                             ) {
                                 Text(

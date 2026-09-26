@@ -31,9 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luna.app.data.preferences.AppThemeMode
 import com.luna.app.ui.theme.LunaTheme
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 import androidx.compose.foundation.layout.width
 
@@ -47,9 +44,6 @@ fun LunaHeader(
     modifier: Modifier = Modifier
 ) {
     val palette = LunaTheme.colors
-    val dateString = remember {
-        SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
-    }
     val isLight = palette.background.red > 0.5f
     val glassFill = if (isLight) Color(0xF5FFFFFF).copy(alpha = 0.88f) else Color(0xD9242429).copy(alpha = 0.82f)
     val glassBorderBrush = Brush.verticalGradient(
@@ -71,55 +65,45 @@ fun LunaHeader(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = 12.dp, vertical = 2.dp)
             .shadow(
-                elevation = 10.dp,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                elevation = 8.dp,
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
                 ambientColor = if (isLight) Color(0x12000000) else Color(0x40000000),
                 spotColor = if (isLight) Color(0x18000000) else Color(0x50000000)
             )
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(24.dp))
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(20.dp))
             .background(glassFill)
             .border(
                 width = 1.dp,
                 brush = glassBorderBrush,
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp)
             )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 14.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text(
-                    text = dateString.uppercase(Locale.getDefault()),
-                    color = palette.textTertiary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.2.sp
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.luna.app.R.drawable.ic_main_icon_logo_removebg_black),
+                    contentDescription = "Luna Logo",
+                    colorFilter = if (!isLight) androidx.compose.ui.graphics.ColorFilter.tint(palette.textPrimary) else null,
+                    modifier = Modifier
+                        .size(26.dp)
+                        .clip(androidx.compose.foundation.shape.RoundedCornerShape(6.dp))
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.foundation.Image(
-                        painter = androidx.compose.ui.res.painterResource(id = com.luna.app.R.drawable.ic_main_icon_logo_removebg_black),
-                        contentDescription = "Luna Logo",
-                        colorFilter = if (!isLight) androidx.compose.ui.graphics.ColorFilter.tint(palette.textPrimary) else null,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Luna",
-                        color = palette.textPrimary,
-                        fontSize = 30.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = (-0.5).sp
-                    )
-                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Luna",
+                    color = palette.textPrimary,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.3).sp
+                )
             }
 
             Row(
@@ -134,7 +118,7 @@ fun LunaHeader(
                             imageVector = if (isSoundEnabled) UntitledIcons.Volume2 else UntitledIcons.VolumeX,
                             contentDescription = "Toggle sound",
                             tint = if (isSoundEnabled) palette.accent else palette.textTertiary,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 )
@@ -148,7 +132,7 @@ fun LunaHeader(
                             imageVector = if (isDark) UntitledIcons.Moon else UntitledIcons.Sun,
                             contentDescription = if (isDark) "Switch to light mode" else "Switch to dark mode",
                             tint = palette.textPrimary,
-                            modifier = Modifier.size(19.dp)
+                            modifier = Modifier.size(17.dp)
                         )
                     }
                 )
@@ -161,7 +145,7 @@ fun LunaHeader(
                                 imageVector = UntitledIcons.SlidersSettings,
                                 contentDescription = "Settings",
                                 tint = palette.textSecondary,
-                                modifier = Modifier.size(19.dp)
+                                modifier = Modifier.size(17.dp)
                             )
                         }
                     )
@@ -198,7 +182,7 @@ private fun HeaderIconButton(
 
     Box(
         modifier = Modifier
-            .size(38.dp)
+            .size(34.dp)
             .minimumInteractiveComponentSize()
             .shadow(
                 elevation = 4.dp,

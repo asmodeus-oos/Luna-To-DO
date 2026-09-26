@@ -55,6 +55,9 @@ import com.luna.app.ui.icons.UntitledIcons
 import com.luna.app.ui.theme.LunaTheme
 import java.io.File
 import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * 🏔️ Settable Cover Banner Card
@@ -77,8 +80,15 @@ fun LunaCoverBannerCard(
     val palette = LunaTheme.colors
     val isLight = palette.background.red > 0.5f
 
+    val defaultDate = remember {
+        SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
+    }
+    val displayTitle = if (title.isBlank() || title.equals("Mountains", ignoreCase = true)) defaultDate else title
+
     var showTitleDialog by remember { mutableStateOf(false) }
-    var tempTitleInput by remember(title) { mutableStateOf(title) }
+    var tempTitleInput by remember(title, defaultDate) {
+        mutableStateOf(if (title.isBlank() || title.equals("Mountains", ignoreCase = true)) defaultDate else title)
+    }
 
     var coverVersion by remember { mutableIntStateOf(0) }
 
@@ -203,15 +213,15 @@ fun LunaCoverBannerCard(
                     .clip(RoundedCornerShape(12.dp))
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        tempTitleInput = title
+                        tempTitleInput = displayTitle
                         showTitleDialog = true
                     }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = title.ifBlank { "Mountains" },
+                    text = displayTitle,
                     color = Color.White,
-                    fontSize = 24.sp,
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = (-0.3).sp,
                     textAlign = TextAlign.Center,
@@ -371,7 +381,7 @@ fun LunaCoverBannerCard(
                                 .background(if (isLight) Color(0xFF18181B) else Color.White)
                                 .clickable {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    onSetTitle(tempTitleInput.trim().ifBlank { "Mountains" })
+                                    onSetTitle(tempTitleInput.trim().ifBlank { defaultDate })
                                     showTitleDialog = false
                                 }
                                 .padding(horizontal = 18.dp, vertical = 10.dp),
