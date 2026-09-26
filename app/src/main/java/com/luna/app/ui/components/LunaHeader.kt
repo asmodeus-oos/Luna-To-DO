@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import com.luna.app.ui.icons.UntitledIcons
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -105,6 +106,7 @@ fun LunaHeader(
                     androidx.compose.foundation.Image(
                         painter = androidx.compose.ui.res.painterResource(id = com.luna.app.R.drawable.ic_main_icon_logo_removebg_black),
                         contentDescription = "Luna Logo",
+                        colorFilter = if (!isLight) androidx.compose.ui.graphics.ColorFilter.tint(palette.textPrimary) else null,
                         modifier = Modifier
                             .size(32.dp)
                             .clip(androidx.compose.foundation.shape.RoundedCornerShape(8.dp))
@@ -150,6 +152,20 @@ fun LunaHeader(
                         )
                     }
                 )
+
+                if (onOpenSettings != null) {
+                    HeaderIconButton(
+                        onClick = onOpenSettings,
+                        icon = {
+                            Icon(
+                                imageVector = UntitledIcons.SlidersSettings,
+                                contentDescription = "Settings",
+                                tint = palette.textSecondary,
+                                modifier = Modifier.size(19.dp)
+                            )
+                        }
+                    )
+                }
             }
         }
     }
@@ -161,7 +177,6 @@ private fun HeaderIconButton(
     icon: @Composable () -> Unit
 ) {
     val palette = LunaTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
 
     val isLight = palette.background.red > 0.5f
     val glassFill = if (isLight) Color(0xF2FFFFFF).copy(alpha = 0.85f) else Color(0x28FFFFFF)
@@ -184,6 +199,7 @@ private fun HeaderIconButton(
     Box(
         modifier = Modifier
             .size(38.dp)
+            .minimumInteractiveComponentSize()
             .shadow(
                 elevation = 4.dp,
                 shape = CircleShape,
@@ -198,8 +214,6 @@ private fun HeaderIconButton(
                 shape = CircleShape
             )
             .clickable(
-                interactionSource = interactionSource,
-                indication = null,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center

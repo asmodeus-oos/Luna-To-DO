@@ -7,15 +7,19 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -137,7 +141,8 @@ fun LunaCoverBannerCard(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(165.dp)
+            .heightIn(min = 145.dp, max = 210.dp)
+            .aspectRatio(16f / 7f)
             .shadow(
                 elevation = 6.dp,
                 shape = RoundedCornerShape(32.dp),
@@ -188,30 +193,44 @@ fun LunaCoverBannerCard(
                 )
         )
 
-        // Centered Title Text (tap to edit) with crisp drop shadow for readability
+        // Centered Title Text (tap to edit) with edit affordance
         if (showTitle) {
-            Text(
-                text = title.ifBlank { "Mountains" },
-                color = Color.White,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = (-0.3).sp,
-                textAlign = TextAlign.Center,
-                style = TextStyle(
-                    shadow = androidx.compose.ui.graphics.Shadow(
-                        color = Color.Black.copy(alpha = 0.80f),
-                        offset = androidx.compose.ui.geometry.Offset(0f, 2f),
-                        blurRadius = 12f
-                    )
-                ),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
                 modifier = Modifier
                     .align(Alignment.Center)
+                    .clip(RoundedCornerShape(12.dp))
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         tempTitleInput = title
                         showTitleDialog = true
                     }
-            )
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = title.ifBlank { "Mountains" },
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.3).sp,
+                    textAlign = TextAlign.Center,
+                    style = TextStyle(
+                        shadow = androidx.compose.ui.graphics.Shadow(
+                            color = Color.Black.copy(alpha = 0.80f),
+                            offset = androidx.compose.ui.geometry.Offset(0f, 2f),
+                            blurRadius = 12f
+                        )
+                    )
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = UntitledIcons.Edit,
+                    contentDescription = "Edit cover title",
+                    tint = Color.White.copy(alpha = 0.85f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
 
         // Bottom-Right Circular Dark Translucent Disc Button (Set button)

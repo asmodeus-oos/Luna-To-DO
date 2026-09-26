@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -108,6 +109,7 @@ fun LunaBulkActionBar(
                 BulkActionButton(
                     icon = Icons.Rounded.Close,
                     tint = palette.textSecondary,
+                    contentDescription = "Deselect all tasks",
                     onClick = onClearSelection
                 )
 
@@ -126,6 +128,7 @@ fun LunaBulkActionBar(
                 BulkActionButton(
                     icon = Icons.Rounded.CheckCircle,
                     tint = palette.textPrimary,
+                    contentDescription = "Complete selected tasks",
                     onClick = onCompleteSelected
                 )
 
@@ -133,6 +136,7 @@ fun LunaBulkActionBar(
                 BulkActionButton(
                     icon = Icons.Rounded.CalendarToday,
                     tint = palette.textPrimary,
+                    contentDescription = "Set due date",
                     onClick = onSetDueDate
                 )
 
@@ -140,6 +144,7 @@ fun LunaBulkActionBar(
                 BulkActionButton(
                     icon = Icons.Rounded.Flag,
                     tint = palette.textPrimary,
+                    contentDescription = "Set priority",
                     onClick = onSetPriority
                 )
 
@@ -147,6 +152,7 @@ fun LunaBulkActionBar(
                 BulkActionButton(
                     icon = Icons.Rounded.Delete,
                     tint = palette.textPrimary,
+                    contentDescription = "Delete selected tasks",
                     onClick = onDeleteSelected
                 )
             }
@@ -158,26 +164,25 @@ fun LunaBulkActionBar(
 private fun BulkActionButton(
     icon: ImageVector,
     tint: Color,
+    contentDescription: String,
     onClick: () -> Unit
 ) {
     val palette = LunaTheme.colors
-    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = Modifier
-            .size(36.dp)
+            .size(38.dp)
+            .minimumInteractiveComponentSize()
             .clip(CircleShape)
             .background(palette.surfaceVariant)
             .clickable(
-                interactionSource = interactionSource,
-                indication = null,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = contentDescription,
             tint = tint,
             modifier = Modifier.size(18.dp)
         )

@@ -165,6 +165,12 @@ fun HomeScreen(
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             }
                             viewModel.toggleSound()
+                        },
+                        onOpenSettings = {
+                            if (uiState.isHapticsEnabled) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            }
+                            viewModel.openSettings()
                         }
                     )
                 }

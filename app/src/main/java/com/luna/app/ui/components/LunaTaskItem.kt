@@ -622,16 +622,17 @@ private fun OverdueWarningBadge(
 private fun MissedStatusBadge(
     modifier: Modifier = Modifier
 ) {
+    val palette = LunaTheme.colors
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFF3F4F6))
+            .background(palette.surfaceVariant)
             .padding(horizontal = 7.dp, vertical = 2.5.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Missed",
-            color = Color(0xFF6B7280),
+            color = palette.textSecondary,
             fontSize = 11.sp,
             fontWeight = FontWeight.Medium
         )

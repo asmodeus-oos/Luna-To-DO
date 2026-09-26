@@ -138,11 +138,6 @@ fun LunaLiquidGlassNavBar(
                 val isTimersSelected = selectedTab == LunaNavTab.TIMERS
                 val isStatsSelected = selectedTab == LunaNavTab.STATS
 
-                val homeWeight by animateFloatAsState(if (isHomeSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_home")
-                val tasksWeight by animateFloatAsState(if (isTasksSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_tasks")
-                val timersWeight by animateFloatAsState(if (isTimersSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_timers")
-                val statsWeight by animateFloatAsState(if (isStatsSelected) 1.35f else 0.88f, animationSpec = tween(200), label = "w_stats")
-
                 val animatedIndex by animateFloatAsState(
                     targetValue = scrollPosition,
                     animationSpec = spring(
@@ -152,11 +147,10 @@ fun LunaLiquidGlassNavBar(
                     label = "liquid_bubble_pos"
                 )
 
-                val unselectedFrac = 0.88f / 3.99f
-                val selectedFrac = 1.35f / 3.99f
-                val bubbleWidth = (totalWidth * selectedFrac) - 2.dp
+                val tabWidth = totalWidth / tabCount
+                val bubbleWidth = tabWidth - 2.dp
                 val bubbleHeight = maxHeight - 2.dp
-                val bubbleOffsetX = (animatedIndex * totalWidth.value * unselectedFrac).dp + 1.dp
+                val bubbleOffsetX = (tabWidth * animatedIndex) + 1.dp
 
                 val bubbleBrush = if (isLight) {
                     Brush.verticalGradient(
@@ -226,7 +220,7 @@ fun LunaLiquidGlassNavBar(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.HOME)
                         },
-                        modifier = Modifier.weight(homeWeight)
+                        modifier = Modifier.weight(1f)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.ClipboardNotes,
@@ -238,7 +232,7 @@ fun LunaLiquidGlassNavBar(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.TASKS)
                         },
-                        modifier = Modifier.weight(tasksWeight)
+                        modifier = Modifier.weight(1f)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.StopwatchTab,
@@ -250,7 +244,7 @@ fun LunaLiquidGlassNavBar(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.TIMERS)
                         },
-                        modifier = Modifier.weight(timersWeight)
+                        modifier = Modifier.weight(1f)
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.Target,
@@ -262,7 +256,7 @@ fun LunaLiquidGlassNavBar(
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.STATS)
                         },
-                        modifier = Modifier.weight(statsWeight)
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }

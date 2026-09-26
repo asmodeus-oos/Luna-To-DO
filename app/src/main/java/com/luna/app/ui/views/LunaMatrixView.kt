@@ -212,12 +212,19 @@ private fun MatrixItemRow(
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        LunaCheckbox(
-            checked = task.isCompleted,
-            onCheckedChange = { onToggle() },
-            size = 16.dp
-        )
-        Spacer(modifier = Modifier.width(6.dp))
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clickable(onClick = onToggle),
+            contentAlignment = Alignment.Center
+        ) {
+            LunaCheckbox(
+                checked = task.isCompleted,
+                onCheckedChange = { onToggle() },
+                size = 18.dp
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = task.title,
             color = palette.textPrimary,
