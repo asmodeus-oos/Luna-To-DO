@@ -30,7 +30,11 @@ data class LunaColorPalette(
     val checkboxChecked: Color,
     val chipBackground: Color,
     val chipSelected: Color,
-    val chipTextSelected: Color
+    val chipTextSelected: Color,
+    val danger: Color = Color(0xFFEF4444),
+    val warning: Color = Color(0xFFF59E0B),
+    val success: Color = Color(0xFF22C55E),
+    val info: Color = Color(0xFF3B82F6)
 )
 
 val LightPalette = LunaColorPalette(
@@ -49,7 +53,11 @@ val LightPalette = LunaColorPalette(
     checkboxChecked = Color(0xFF18181B),
     chipBackground = Color(0xFFDBDBDB),
     chipSelected = Color(0xFF18181B),
-    chipTextSelected = Color(0xFFFFFFFF)
+    chipTextSelected = Color(0xFFFFFFFF),
+    danger = Color(0xFFEF4444),
+    warning = Color(0xFFF59E0B),
+    success = Color(0xFF22C55E),
+    info = Color(0xFF3B82F6)
 )
 
 val DarkPalette = LunaColorPalette(
@@ -68,7 +76,11 @@ val DarkPalette = LunaColorPalette(
     checkboxChecked = Color(0xFFF4F4F5),
     chipBackground = Color(0xFF2C2C33),
     chipSelected = Color(0xFFF4F4F5),
-    chipTextSelected = Color(0xFF121214)
+    chipTextSelected = Color(0xFF121214),
+    danger = Color(0xFFFF5252),
+    warning = Color(0xFFFFB74D),
+    success = Color(0xFF4ADE80),
+    info = Color(0xFF60A5FA)
 )
 
 val BlackPalette = LunaColorPalette(
@@ -87,5 +99,9 @@ val BlackPalette = LunaColorPalette(
     checkboxChecked = Color(0xFFFFFFFF),
     chipBackground = Color(0xFF202024),
     chipSelected = Color(0xFFFFFFFF),
-    chipTextSelected = Color(0xFF000000)
+    chipTextSelected = Color(0xFF000000),
+    danger = Color(0xFFFF453A),
+    warning = Color(0xFFFF9F0A),
+    success = Color(0xFF30D158),
+    info = Color(0xFF0A84FF)
 )

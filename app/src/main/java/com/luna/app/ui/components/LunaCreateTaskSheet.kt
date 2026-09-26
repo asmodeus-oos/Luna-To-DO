@@ -32,6 +32,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -163,6 +165,10 @@ fun LunaCreateTaskSheet(
 
     // Effective priority & tags combined from manual + parsed
     val effectivePriority = if (parsed.priority != Priority.NONE) parsed.priority else selectedPriority
+
+    var showAdvancedOptions by remember { mutableStateOf(false) }
+    val hasAdvancedData = notes.isNotBlank() || place.isNotBlank() || subtitles.isNotEmpty() || subtasks.isNotEmpty() || selectedRecurrence != RecurrenceType.NONE || alarmOnStart || alarmOnFinish
+    val isAdvancedExpanded = showAdvancedOptions || hasAdvancedData
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -346,73 +352,6 @@ fun LunaCreateTaskSheet(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Task Notes Input
-            BasicTextField(
-                value = notes,
-                onValueChange = { notes = it },
-                textStyle = TextStyle(
-                    color = palette.textSecondary,
-                    fontSize = 14.sp
-                ),
-                cursorBrush = SolidColor(palette.accent),
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done
-                ),
-                modifier = Modifier.fillMaxWidth(),
-                decorationBox = { innerTextField ->
-                    if (notes.isEmpty()) {
-                        Text(
-                            text = "Add notes or markdown description (optional)",
-                            color = palette.textTertiary.copy(alpha = 0.8f),
-                            fontSize = 14.sp
-                        )
-                    }
-                    innerTextField()
-                }
-            )
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Task Place / Location Input
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(palette.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(horizontal = 12.dp, vertical = 10.dp)
-            ) {
-                Text(text = "📍", fontSize = 14.sp)
-                Spacer(modifier = Modifier.width(8.dp))
-                BasicTextField(
-                    value = place,
-                    onValueChange = { place = it },
-                    textStyle = TextStyle(
-                        color = palette.textPrimary,
-                        fontSize = 13.sp
-                    ),
-                    cursorBrush = SolidColor(palette.accent),
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words,
-                        imeAction = ImeAction.Next
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                    decorationBox = { innerTextField ->
-                        if (place.isEmpty()) {
-                            Text(
-                                text = "Add place / location (e.g. Office, Home, Gym)",
-                                color = palette.textTertiary.copy(alpha = 0.8f),
-                                fontSize = 13.sp
-                            )
-                        }
-                        innerTextField()
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
             // Deadline System Mode (choose one mode per task)
             Text(
                 text = "DEADLINE SYSTEM",
@@ -521,194 +460,7 @@ fun LunaCreateTaskSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Subtitles & Section Headers
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "SUBTITLES (SECTIONS)",
-                    color = palette.textTertiary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = "+ Add Section",
-                    color = palette.accent,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clickable { isAddingSubtitle = !isAddingSubtitle }
-                        .padding(4.dp)
-                )
-            }
-
-            if (subtitles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(6.dp))
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    subtitles.forEach { sub ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(palette.surfaceVariant)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(text = "📁 $sub", color = palette.textPrimary, fontSize = 12.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Icon(
-                                    imageVector = Icons.Rounded.Close,
-                                    contentDescription = "Remove",
-                                    tint = palette.textTertiary,
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .clickable { subtitles = subtitles.filter { it != sub } }
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (isAddingSubtitle) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(palette.surfaceVariant)
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BasicTextField(
-                        value = newSubtitleInput,
-                        onValueChange = { newSubtitleInput = it },
-                        textStyle = TextStyle(color = palette.textPrimary, fontSize = 12.sp),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                if (newSubtitleInput.isNotBlank()) {
-                                    subtitles = subtitles + newSubtitleInput.trim()
-                                    newSubtitleInput = ""
-                                    isAddingSubtitle = false
-                                }
-                            }
-                        ),
-                        modifier = Modifier.weight(1f),
-                        decorationBox = { inner ->
-                            if (newSubtitleInput.isEmpty()) {
-                                Text("Section name (e.g. Materials Needed, Steps)...", color = palette.textTertiary, fontSize = 12.sp)
-                            }
-                            inner()
-                        }
-                    )
-                    Text(
-                        text = "Add",
-                        color = palette.accent,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .clickable {
-                                if (newSubtitleInput.isNotBlank()) {
-                                    subtitles = subtitles + newSubtitleInput.trim()
-                                    newSubtitleInput = ""
-                                    isAddingSubtitle = false
-                                }
-                            }
-                            .padding(horizontal = 6.dp)
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            // Subtasks preview & quick add
-            if (subtasks.isNotEmpty()) {
-                Text(
-                    text = "CHECKLIST ITEMS",
-                    color = palette.textTertiary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                subtasks.forEachIndexed { index, item ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(text = "•", color = palette.accent, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = item,
-                            color = palette.textPrimary,
-                            fontSize = 13.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = "Remove",
-                            tint = palette.textTertiary,
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clickable {
-                                    subtasks = subtasks.filterIndexed { i, _ -> i != index }
-                                }
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            // Quick add subtask field
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(palette.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = null,
-                    tint = palette.textTertiary,
-                    modifier = Modifier.size(15.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                BasicTextField(
-                    value = newSubtaskInput,
-                    onValueChange = { newSubtaskInput = it },
-                    textStyle = TextStyle(color = palette.textPrimary, fontSize = 13.sp),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(
-                        onDone = {
-                            if (newSubtaskInput.isNotBlank()) {
-                                subtasks = subtasks + newSubtaskInput.trim()
-                                newSubtaskInput = ""
-                            }
-                        }
-                    ),
-                    modifier = Modifier.weight(1f),
-                    decorationBox = { inner ->
-                        if (newSubtaskInput.isEmpty()) {
-                            Text("+ Add checklist subtask...", color = palette.textTertiary, fontSize = 12.sp)
-                        }
-                        inner()
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Priority Chips
             Text(
@@ -763,256 +515,542 @@ fun LunaCreateTaskSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Recurrence Selector
-            Text(
-                text = "REPEATING TASK",
-                color = palette.textTertiary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            // Progressive Disclosure Accordion Toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                    .clickable { showAdvancedOptions = !isAdvancedExpanded }
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                RecurrenceType.entries.forEach { rec ->
-                    val isSelected = rec == selectedRecurrence
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(
-                                if (isSelected) palette.accent.copy(alpha = 0.15f)
-                                else palette.surfaceVariant.copy(alpha = 0.4f)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (isSelected) palette.accent else Color.Transparent,
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            .clickable { selectedRecurrence = rec }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (rec == RecurrenceType.NONE) "Does Not Repeat" else rec.label,
-                            color = if (isSelected) palette.accent else palette.textSecondary,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isAdvancedExpanded) "Fewer details" else "More options (Notes, Subtasks, Location, Alarms)",
+                        color = palette.textSecondary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    if (hasAdvancedData && !isAdvancedExpanded) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(palette.accent)
                         )
                     }
                 }
+                Icon(
+                    imageVector = if (isAdvancedExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    tint = palette.textTertiary,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
-            // Weekly Day & Time Picker (shown when WEEKLY is selected)
-            if (selectedRecurrence == RecurrenceType.WEEKLY) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "REPEAT ON DAY & TIME",
-                    color = palette.textTertiary,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                // Day of week chips
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val days = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
-                    val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
-                    days.forEachIndexed { index, day ->
-                        val isSelected = weeklyDay == day
-                        Box(
+            AnimatedVisibility(visible = isAdvancedExpanded) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Task Place / Location Input
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                    ) {
+                        Text(text = "📍", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        BasicTextField(
+                            value = place,
+                            onValueChange = { place = it },
+                            textStyle = TextStyle(
+                                color = palette.textPrimary,
+                                fontSize = 13.sp
+                            ),
+                            cursorBrush = SolidColor(palette.accent),
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Words,
+                                imeAction = ImeAction.Next
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            decorationBox = { innerTextField ->
+                                if (place.isEmpty()) {
+                                    Text(
+                                        text = "Add place / location (e.g. Office, Home, Gym)",
+                                        color = palette.textTertiary.copy(alpha = 0.8f),
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                innerTextField()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Task Notes Input
+                    BasicTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        textStyle = TextStyle(
+                            color = palette.textSecondary,
+                            fontSize = 14.sp
+                        ),
+                        cursorBrush = SolidColor(palette.accent),
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                        decorationBox = { innerTextField ->
+                            if (notes.isEmpty()) {
+                                Text(
+                                    text = "Add notes or markdown description (optional)",
+                                    color = palette.textTertiary.copy(alpha = 0.8f),
+                                    fontSize = 14.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Checklist Subtasks
+                    if (subtasks.isNotEmpty()) {
+                        Text(
+                            text = "CHECKLIST ITEMS",
+                            color = palette.textTertiary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        subtasks.forEachIndexed { index, item ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = "•", color = palette.accent, fontSize = 14.sp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = item,
+                                    color = palette.textPrimary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "Remove",
+                                    tint = palette.textTertiary,
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clickable {
+                                            subtasks = subtasks.filterIndexed { i, _ -> i != index }
+                                        }
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    // Quick add subtask field
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                            .padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = palette.textTertiary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        BasicTextField(
+                            value = newSubtaskInput,
+                            onValueChange = { newSubtaskInput = it },
+                            textStyle = TextStyle(color = palette.textPrimary, fontSize = 13.sp),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (newSubtaskInput.isNotBlank()) {
+                                        subtasks = subtasks + newSubtaskInput.trim()
+                                        newSubtaskInput = ""
+                                    }
+                                }
+                            ),
+                            modifier = Modifier.weight(1f),
+                            decorationBox = { inner ->
+                                if (newSubtaskInput.isEmpty()) {
+                                    Text("+ Add checklist subtask...", color = palette.textTertiary, fontSize = 12.sp)
+                                }
+                                inner()
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Subtitles & Section Headers
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "SUBTITLES (SECTIONS)",
+                            color = palette.textTertiary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Text(
+                            text = "+ Add Section",
+                            color = palette.accent,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { isAddingSubtitle = !isAddingSubtitle }
+                                .padding(4.dp)
+                        )
+                    }
+
+                    if (subtitles.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            subtitles.forEach { sub ->
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(palette.surfaceVariant)
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(text = "📁 $sub", color = palette.textPrimary, fontSize = 12.sp)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Icon(
+                                            imageVector = Icons.Rounded.Close,
+                                            contentDescription = "Remove",
+                                            tint = palette.textTertiary,
+                                            modifier = Modifier
+                                                .size(12.dp)
+                                                .clickable { subtitles = subtitles.filter { it != sub } }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (isAddingSubtitle) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(palette.surfaceVariant)
+                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            BasicTextField(
+                                value = newSubtitleInput,
+                                onValueChange = { newSubtitleInput = it },
+                                textStyle = TextStyle(color = palette.textPrimary, fontSize = 12.sp),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (newSubtitleInput.isNotBlank()) {
+                                            subtitles = subtitles + newSubtitleInput.trim()
+                                            newSubtitleInput = ""
+                                            isAddingSubtitle = false
+                                        }
+                                    }
+                                ),
+                                modifier = Modifier.weight(1f),
+                                decorationBox = { inner ->
+                                    if (newSubtitleInput.isEmpty()) {
+                                        Text("Section name (e.g. Materials Needed, Steps)...", color = palette.textTertiary, fontSize = 12.sp)
+                                    }
+                                    inner()
+                                }
+                            )
+                            Text(
+                                text = "Add",
+                                color = palette.accent,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier
+                                    .clickable {
+                                        if (newSubtitleInput.isNotBlank()) {
+                                            subtitles = subtitles + newSubtitleInput.trim()
+                                            newSubtitleInput = ""
+                                            isAddingSubtitle = false
+                                        }
+                                    }
+                                    .padding(horizontal = 6.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Recurrence Selector
+                    Text(
+                        text = "REPEATING TASK",
+                        color = palette.textTertiary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        RecurrenceType.entries.forEach { rec ->
+                            val isSelected = rec == selectedRecurrence
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) palette.accent.copy(alpha = 0.15f)
+                                        else palette.surfaceVariant.copy(alpha = 0.4f)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isSelected) palette.accent else Color.Transparent,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { selectedRecurrence = rec }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (rec == RecurrenceType.NONE) "Does Not Repeat" else rec.label,
+                                    color = if (isSelected) palette.accent else palette.textSecondary,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    // Weekly Day & Time Picker (shown when WEEKLY is selected)
+                    if (selectedRecurrence == RecurrenceType.WEEKLY) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = "REPEAT ON DAY & TIME",
+                            color = palette.textTertiary,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            val days = listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
+                            val dayLabels = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+                            days.forEachIndexed { index, day ->
+                                val isSelected = weeklyDay == day
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            if (isSelected) palette.accent.copy(alpha = 0.15f)
+                                            else palette.surfaceVariant.copy(alpha = 0.4f)
+                                        )
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (isSelected) palette.accent else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { weeklyDay = if (isSelected) null else day }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = dayLabels[index],
+                                        color = if (isSelected) palette.accent else palette.textSecondary,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(text = "⏰", fontSize = 16.sp)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(palette.surface)
+                                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
+                                    .clickable { weeklyTimeHour = if (weeklyTimeHour >= 12) 1 else weeklyTimeHour + 1 }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "%02d".format(weeklyTimeHour),
+                                    color = palette.textPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Text(text = ":", color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(palette.surface)
+                                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
+                                    .clickable { weeklyTimeMinute = (weeklyTimeMinute + 5) % 60 }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "%02d".format(weeklyTimeMinute),
+                                    color = palette.textPrimary,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (weeklyTimeIsAm) palette.accent.copy(alpha = 0.15f) else palette.surfaceVariant)
+                                    .border(1.dp, if (weeklyTimeIsAm) palette.accent else palette.borderSubtle, RoundedCornerShape(8.dp))
+                                    .clickable { weeklyTimeIsAm = !weeklyTimeIsAm }
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = if (weeklyTimeIsAm) "AM" else "PM",
+                                    color = if (weeklyTimeIsAm) palette.accent else palette.textSecondary,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Alarm Toggles
+                    Text(
+                        text = "ALARMS",
+                        color = palette.textTertiary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(
-                                    if (isSelected) palette.accent.copy(alpha = 0.15f)
+                                    if (alarmOnStart) palette.accent.copy(alpha = 0.12f)
                                     else palette.surfaceVariant.copy(alpha = 0.4f)
                                 )
                                 .border(
                                     width = 1.dp,
-                                    color = if (isSelected) palette.accent else Color.Transparent,
-                                    shape = RoundedCornerShape(8.dp)
+                                    color = if (alarmOnStart) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
                                 )
-                                .clickable { weeklyDay = if (isSelected) null else day }
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .clickable { alarmOnStart = !alarmOnStart }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                text = dayLabels[index],
-                                color = if (isSelected) palette.accent else palette.textSecondary,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                text = "🔔 Alarm when task starts",
+                                color = if (alarmOnStart) palette.accent else palette.textSecondary,
+                                fontSize = 13.sp,
+                                fontWeight = if (alarmOnStart) FontWeight.SemiBold else FontWeight.Medium
                             )
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 44.dp, height = 24.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (alarmOnStart) palette.accent else palette.surfaceVariant)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(2.dp)
+                                        .size(20.dp)
+                                        .align(if (alarmOnStart) Alignment.CenterEnd else Alignment.CenterStart)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                            }
+                        }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    if (alarmOnFinish) palette.accent.copy(alpha = 0.12f)
+                                    else palette.surfaceVariant.copy(alpha = 0.4f)
+                                )
+                                .border(
+                                    width = 1.dp,
+                                    color = if (alarmOnFinish) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                .clickable { alarmOnFinish = !alarmOnFinish }
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "🔔 Alarm when task finishes",
+                                color = if (alarmOnFinish) palette.accent else palette.textSecondary,
+                                fontSize = 13.sp,
+                                fontWeight = if (alarmOnFinish) FontWeight.SemiBold else FontWeight.Medium
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(width = 44.dp, height = 24.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(if (alarmOnFinish) palette.accent else palette.surfaceVariant)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .padding(2.dp)
+                                        .size(20.dp)
+                                        .align(if (alarmOnFinish) Alignment.CenterEnd else Alignment.CenterStart)
+                                        .clip(CircleShape)
+                                        .background(Color.White)
+                                )
+                            }
                         }
                     }
                 }
-                // Time picker for weekly recurrence
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(palette.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "⏰",
-                        fontSize = 16.sp
-                    )
-                    // Hour stepper
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(palette.surface)
-                            .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
-                            .clickable { weeklyTimeHour = if (weeklyTimeHour >= 12) 1 else weeklyTimeHour + 1 }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "%02d".format(weeklyTimeHour),
-                            color = palette.textPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Text(text = ":", color = palette.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                    // Minute stepper
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(palette.surface)
-                            .border(1.dp, palette.borderSubtle, RoundedCornerShape(8.dp))
-                            .clickable { weeklyTimeMinute = (weeklyTimeMinute + 5) % 60 }
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = "%02d".format(weeklyTimeMinute),
-                            color = palette.textPrimary,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    // AM/PM toggle
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (weeklyTimeIsAm) palette.accent.copy(alpha = 0.15f) else palette.surfaceVariant)
-                            .border(1.dp, if (weeklyTimeIsAm) palette.accent else palette.borderSubtle, RoundedCornerShape(8.dp))
-                            .clickable { weeklyTimeIsAm = !weeklyTimeIsAm }
-                            .padding(horizontal = 10.dp, vertical = 6.dp)
-                    ) {
-                        Text(
-                            text = if (weeklyTimeIsAm) "AM" else "PM",
-                            color = if (weeklyTimeIsAm) palette.accent else palette.textSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Alarm Toggles
-            Text(
-                text = "ALARMS",
-                color = palette.textTertiary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                // Alarm on Start toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (alarmOnStart) palette.accent.copy(alpha = 0.12f)
-                            else palette.surfaceVariant.copy(alpha = 0.4f)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (alarmOnStart) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clickable { alarmOnStart = !alarmOnStart }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "🔔 Alarm when task starts",
-                        color = if (alarmOnStart) palette.accent else palette.textSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = if (alarmOnStart) FontWeight.SemiBold else FontWeight.Medium
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(width = 44.dp, height = 24.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (alarmOnStart) palette.accent else palette.surfaceVariant)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .padding(2.dp)
-                                .size(20.dp)
-                                .align(if (alarmOnStart) Alignment.CenterEnd else Alignment.CenterStart)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        )
-                    }
-                }
-                // Alarm on Finish toggle
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            if (alarmOnFinish) palette.accent.copy(alpha = 0.12f)
-                            else palette.surfaceVariant.copy(alpha = 0.4f)
-                        )
-                        .border(
-                            width = 1.dp,
-                            color = if (alarmOnFinish) palette.accent.copy(alpha = 0.5f) else Color.Transparent,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        .clickable { alarmOnFinish = !alarmOnFinish }
-                        .padding(horizontal = 14.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text(
-                        text = "🔔 Alarm when task finishes",
-                        color = if (alarmOnFinish) palette.accent else palette.textSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = if (alarmOnFinish) FontWeight.SemiBold else FontWeight.Medium
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(width = 44.dp, height = 24.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (alarmOnFinish) palette.accent else palette.surfaceVariant)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .padding(2.dp)
-                                .size(20.dp)
-                                .align(if (alarmOnFinish) Alignment.CenterEnd else Alignment.CenterStart)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Create Task Pill Button
             val isEnabled = rawInput.isNotBlank()

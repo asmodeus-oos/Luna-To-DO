@@ -589,9 +589,9 @@ private fun OverdueWarningBadge(
 ) {
     val palette = LunaTheme.colors
     val isDark = palette.background.red < 0.5f
-    val bg = if (isDark) Color(0x33FF3B30) else Color(0xFFFEE2E2)
-    val border = if (isDark) Color(0x66FF3B30) else Color(0xFFEF4444).copy(alpha = 0.4f)
-    val color = if (isDark) Color(0xFFFF6B6B) else Color(0xFFDC2626)
+    val bg = if (isDark) palette.danger.copy(alpha = 0.18f) else Color(0xFFFEE2E2)
+    val border = if (isDark) palette.danger.copy(alpha = 0.50f) else palette.danger.copy(alpha = 0.4f)
+    val color = if (isDark) palette.danger else Color(0xFFDC2626)
 
     Row(
         modifier = modifier

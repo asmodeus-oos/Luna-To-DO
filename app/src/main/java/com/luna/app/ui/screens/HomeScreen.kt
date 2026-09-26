@@ -301,7 +301,17 @@ fun HomeScreen(
                                                 .weight(1f),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            EmptyStateView(filter = uiState.selectedSmartFilter)
+                                            EmptyStateView(
+                                                filter = uiState.selectedSmartFilter,
+                                                actionLabel = if (uiState.selectedSmartFilter == SmartFilter.ALL || uiState.selectedSmartFilter == SmartFilter.TODAY) "+ Create Task" else "Show All Tasks",
+                                                onAction = {
+                                                    if (uiState.selectedSmartFilter == SmartFilter.ALL || uiState.selectedSmartFilter == SmartFilter.TODAY) {
+                                                        viewModel.openCreateSheet()
+                                                    } else {
+                                                        viewModel.selectSmartFilter(SmartFilter.ALL)
+                                                    }
+                                                }
+                                            )
                                         }
                                     } else {
                                         LazyColumn(
@@ -435,6 +445,13 @@ fun HomeScreen(
                                         onUpdateRoutine = { viewModel.updateRoutine(it) },
                                         onDuplicateRoutine = { viewModel.duplicateRoutine(it) },
                                         onDeleteRoutine = { viewModel.deleteRoutine(it) }
+                                    )
+                                }
+                                AppViewMode.MATRIX -> {
+                                    LunaMatrixView(
+                                        tasks = uiState.allTasks,
+                                        onToggleCompleted = { viewModel.toggleTask(it.task) },
+                                        onTaskClick = { viewModel.openTaskDetail(it) }
                                     )
                                 }
                             }
@@ -798,6 +815,8 @@ fun HomeScreen(
 @Composable
 private fun EmptyStateView(
     filter: SmartFilter,
+    onAction: () -> Unit,
+    actionLabel: String,
     modifier: Modifier = Modifier
 ) {
     val palette = LunaTheme.colors
@@ -824,7 +843,7 @@ private fun EmptyStateView(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = when (filter) {
-                SmartFilter.ALL -> "Tap the + button to create your first task"
+                SmartFilter.ALL -> "Tap below to create your first task"
                 SmartFilter.TODAY -> "Enjoy your free time or add a new task"
                 SmartFilter.HIGH_PRIORITY -> "Mark tasks with P1 to see them here"
                 SmartFilter.COMPLETED -> "Tasks you complete will be archived here"
@@ -834,6 +853,22 @@ private fun EmptyStateView(
             fontSize = 13.sp,
             textAlign = TextAlign.Center
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(palette.accent)
+                .clickable(onClick = onAction)
+                .padding(horizontal = 18.dp, vertical = 9.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = actionLabel,
+                color = palette.onAccent,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
     }
 }
 

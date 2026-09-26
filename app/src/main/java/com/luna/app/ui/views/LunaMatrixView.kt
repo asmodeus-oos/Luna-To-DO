@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,8 +17,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -41,69 +44,147 @@ fun LunaMatrixView(
     onTaskClick: (TaskWithDetails) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val palette = LunaTheme.colors
     val q1Tasks = tasks.filter { !it.task.isCompleted && it.task.priority == Priority.P1 }
     val q2Tasks = tasks.filter { !it.task.isCompleted && it.task.priority == Priority.P2 }
     val q3Tasks = tasks.filter { !it.task.isCompleted && it.task.priority == Priority.P3 }
     val q4Tasks = tasks.filter { !it.task.isCompleted && (it.task.priority == Priority.P4 || it.task.priority == Priority.NONE) }
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
-        // Top Row: Q1 (Do First) & Q2 (Schedule)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            MatrixQuadrant(
-                title = "DO FIRST",
-                subtitle = "Urgent & Important",
-                color = Color(0xFFEF4444),
-                tasks = q1Tasks,
-                onToggleCompleted = onToggleCompleted,
-                onTaskClick = onTaskClick,
-                modifier = Modifier.weight(1f)
-            )
-            MatrixQuadrant(
-                title = "SCHEDULE",
-                subtitle = "Important",
-                color = Color(0xFFF59E0B),
-                tasks = q2Tasks,
-                onToggleCompleted = onToggleCompleted,
-                onTaskClick = onTaskClick,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        val isLandscape = maxWidth > maxHeight
+        val isCompactHeight = maxHeight < 580.dp
 
-        // Bottom Row: Q3 (Delegate) & Q4 (Backlog)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            MatrixQuadrant(
-                title = "DELEGATE",
-                subtitle = "Urgent",
-                color = Color(0xFF3B82F6),
-                tasks = q3Tasks,
-                onToggleCompleted = onToggleCompleted,
-                onTaskClick = onTaskClick,
-                modifier = Modifier.weight(1f)
-            )
-            MatrixQuadrant(
-                title = "BACKLOG",
-                subtitle = "Low Priority",
-                color = Color(0xFF94A3B8),
-                tasks = q4Tasks,
-                onToggleCompleted = onToggleCompleted,
-                onTaskClick = onTaskClick,
-                modifier = Modifier.weight(1f)
-            )
+        if (isCompactHeight && !isLandscape) {
+            // Scrollable 2x2 layout when height is restricted, so quadrants don't get crushed
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MatrixQuadrant(
+                        title = "DO FIRST",
+                        subtitle = "Urgent & Important",
+                        color = palette.danger,
+                        tasks = q1Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(240.dp)
+                    )
+                    MatrixQuadrant(
+                        title = "SCHEDULE",
+                        subtitle = "Important",
+                        color = palette.warning,
+                        tasks = q2Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(240.dp)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MatrixQuadrant(
+                        title = "DELEGATE",
+                        subtitle = "Urgent",
+                        color = palette.info,
+                        tasks = q3Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(240.dp)
+                    )
+                    MatrixQuadrant(
+                        title = "BACKLOG",
+                        subtitle = "Low Priority",
+                        color = palette.textTertiary,
+                        tasks = q4Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(240.dp)
+                    )
+                }
+            }
+        } else {
+            // Normal 2x2 grid with bottom navbar clearance
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = 90.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Top Row: Q1 (Do First) & Q2 (Schedule)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MatrixQuadrant(
+                        title = "DO FIRST",
+                        subtitle = "Urgent & Important",
+                        color = palette.danger,
+                        tasks = q1Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MatrixQuadrant(
+                        title = "SCHEDULE",
+                        subtitle = "Important",
+                        color = palette.warning,
+                        tasks = q2Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                // Bottom Row: Q3 (Delegate) & Q4 (Backlog)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    MatrixQuadrant(
+                        title = "DELEGATE",
+                        subtitle = "Urgent",
+                        color = palette.info,
+                        tasks = q3Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MatrixQuadrant(
+                        title = "BACKLOG",
+                        subtitle = "Low Priority",
+                        color = palette.textTertiary,
+                        tasks = q4Tasks,
+                        onToggleCompleted = onToggleCompleted,
+                        onTaskClick = onTaskClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 }

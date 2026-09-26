@@ -4,5 +4,6 @@ enum class AppViewMode(val label: String, val icon: String) {
     LIST("List", "📝"),
     CALENDAR("Calendar", "📅"),
     HABITS("Habits", "⚡"),
-    ROUTINES("Routines", "🔄")
+    ROUTINES("Routines", "🔄"),
+    MATRIX("Matrix", "🎯")
 }

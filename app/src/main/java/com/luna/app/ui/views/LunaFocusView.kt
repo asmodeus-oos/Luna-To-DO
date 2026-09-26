@@ -243,11 +243,9 @@ fun LunaFocusView(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp)
-            .padding(top = 16.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Mode Selector (Work / Break) - High contrast & Liquid Glass Capsule
         val selectorContainerBg = if (isLight) Color(0xFFDFDFE3) else Color(0xFF1E1E24)
@@ -336,161 +334,13 @@ fun LunaFocusView(
             }
         }
 
-        // Redesigned Set Time Duration Controls Card
-        val modeTitle = when (currentMode) {
-            PomodoroMode.WORK -> "FOCUS WORK DURATION"
-            PomodoroMode.SHORT_BREAK -> "SHORT BREAK DURATION"
-            PomodoroMode.LONG_BREAK -> "LONG BREAK DURATION"
-        }
-
-        val activeDurationSec = getModeSeconds(currentMode)
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(20.dp))
-                .background(if (isLight) Color(0xFFF2F2F7) else Color(0xFF1C1C24))
-                .border(1.dp, palette.borderSubtle, RoundedCornerShape(20.dp))
-                .padding(14.dp)
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = modeTitle,
-                        color = palette.accent,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { showDurationDialog = true }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Settings,
-                            contentDescription = "Customize",
-                            tint = palette.textTertiary,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "CUSTOMIZE",
-                            color = palette.textTertiary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
-
-                // Time Stepper Bar (-5m, -1m, Time Display, +1m, +5m)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        TimeStepperChip(label = "-5m", isLight = isLight, palette = palette) {
-                            val newSec = (activeDurationSec - 5 * 60).coerceAtLeast(60)
-                            updateModeDuration(currentMode, newSec)
-                        }
-                        TimeStepperChip(label = "-1m", isLight = isLight, palette = palette) {
-                            val newSec = (activeDurationSec - 60).coerceAtLeast(60)
-                            updateModeDuration(currentMode, newSec)
-                        }
-                    }
-
-                    val mins = activeDurationSec / 60
-                    val secs = activeDurationSec % 60
-                    Text(
-                        text = if (secs > 0) "${mins}m ${secs}s" else "${mins}m",
-                        color = palette.textPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        TimeStepperChip(label = "+1m", isLight = isLight, palette = palette) {
-                            val newSec = (activeDurationSec + 60).coerceAtMost(180 * 60)
-                            updateModeDuration(currentMode, newSec)
-                        }
-                        TimeStepperChip(label = "+5m", isLight = isLight, palette = palette) {
-                            val newSec = (activeDurationSec + 5 * 60).coerceAtMost(180 * 60)
-                            updateModeDuration(currentMode, newSec)
-                        }
-                    }
-                }
-
-                // Quick Preset Pills
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val presets = if (currentMode == PomodoroMode.WORK) {
-                        listOf(15, 25, 45, 60)
-                    } else if (currentMode == PomodoroMode.SHORT_BREAK) {
-                        listOf(3, 5, 10, 15)
-                    } else {
-                        listOf(10, 15, 20, 30)
-                    }
-
-                    presets.forEach { targetMin ->
-                        val targetSec = targetMin * 60
-                        val isPresetActive = activeDurationSec == targetSec
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .background(
-                                    if (isPresetActive) {
-                                        palette.accent.copy(alpha = 0.15f)
-                                    } else if (isLight) {
-                                        Color.White
-                                    } else {
-                                        Color(0xFF262630)
-                                    }
-                                )
-                                .border(
-                                    1.dp,
-                                    if (isPresetActive) palette.accent.copy(alpha = 0.5f) else palette.borderSubtle,
-                                    RoundedCornerShape(10.dp)
-                                )
-                                .clickable {
-                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                    updateModeDuration(currentMode, targetSec)
-                                }
-                                .padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "${targetMin}m",
-                                color = if (isPresetActive) palette.accent else palette.textPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = if (isPresetActive) FontWeight.Bold else FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Animated Timer Ring & Time display
+        // Pinned Hero: Animated Timer Ring & Time display
         val totalModeSec = getModeSeconds(currentMode).coerceAtLeast(1)
         val progress = (totalModeSec - remainingSeconds).toFloat() / totalModeSec.toFloat()
         val animatedProgress by animateFloatAsState(targetValue = progress, label = "timerProgress")
 
         Box(
-            modifier = Modifier.size(230.dp),
+            modifier = Modifier.size(190.dp),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -519,7 +369,7 @@ fun LunaFocusView(
                 Text(
                     text = timeString,
                     color = palette.textPrimary,
-                    fontSize = 48.sp,
+                    fontSize = 44.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
                     letterSpacing = (-1).sp
@@ -535,118 +385,7 @@ fun LunaFocusView(
             }
         }
 
-        // Active Focus Task Card with Custom Liquid Glass Modal Trigger
-        if (currentTask != null) {
-            val activeTask = currentTask
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(palette.surface)
-                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(18.dp))
-                    .padding(16.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                                showTaskPickerModal = true
-                            }
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "CURRENT TASK ▾",
-                                color = palette.accent,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "(${activeTasks.size} available)",
-                                color = palette.textTertiary,
-                                fontSize = 10.sp
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(3.dp))
-                        Text(
-                            text = activeTask.task.title,
-                            color = palette.textPrimary,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        if (activeTask.task.actualMinutes > 0) {
-                            Text(
-                                text = "${activeTask.task.actualMinutes}m logged",
-                                color = palette.textSecondary,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF22C55E))
-                            .clickable {
-                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
-                                onCompleteTask(activeTask.task.id)
-                                selectedTaskIndex = -1
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = "Complete task",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-            }
-        } else {
-            // No task selected — show general focus session card
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(palette.surface)
-                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(18.dp))
-                    .clickable {
-                        if (activeTasks.isNotEmpty()) {
-                            haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
-                            showTaskPickerModal = true
-                        }
-                    }
-                    .padding(16.dp)
-            ) {
-                Column {
-                    Text(
-                        text = if (activeTasks.isNotEmpty()) "NO TASK SELECTED ▾" else "GENERAL FOCUS",
-                        color = palette.textTertiary,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(modifier = Modifier.height(3.dp))
-                    Text(
-                        text = if (activeTasks.isNotEmpty()) "Tap to select a task, or run as general focus session" else "No tasks available — running as free focus session",
-                        color = palette.textSecondary,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-        }
-
-        // Controls: Reset, Play/Pause, Skip
+        // Controls: Reset, Play/Pause, Skip (Pinned under Timer Dial)
         Row(
             horizontalArrangement = Arrangement.spacedBy(18.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -654,7 +393,7 @@ fun LunaFocusView(
             // Reset
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(46.dp)
                     .shadow(
                         elevation = 4.dp,
                         shape = CircleShape,
@@ -681,7 +420,7 @@ fun LunaFocusView(
             // Play / Pause Big Primary Button
             Box(
                 modifier = Modifier
-                    .size(72.dp)
+                    .size(68.dp)
                     .shadow(
                         elevation = 12.dp,
                         shape = CircleShape,
@@ -700,14 +439,14 @@ fun LunaFocusView(
                     imageVector = if (isRunning) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                     contentDescription = if (isRunning) "Pause" else "Start",
                     tint = if (isLight) Color.White else Color(0xFF18181B),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(34.dp)
                 )
             }
 
             // Skip
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(46.dp)
                     .shadow(
                         elevation = 4.dp,
                         shape = CircleShape,
@@ -733,8 +472,277 @@ fun LunaFocusView(
             }
         }
 
-        // Overscroll padding so big buttons remain clear of navbar
-        Spacer(modifier = Modifier.height(260.dp))
+        // Scrollable lower section: Task Card + Duration Controls & Presets
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .verticalScroll(scrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Active Focus Task Card with Custom Liquid Glass Modal Trigger
+            if (currentTask != null) {
+                val activeTask = currentTask
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(palette.surface)
+                        .border(1.dp, palette.borderSubtle, RoundedCornerShape(18.dp))
+                        .padding(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                    showTaskPickerModal = true
+                                }
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "CURRENT TASK ▾",
+                                    color = palette.accent,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 1.sp
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "(${activeTasks.size} available)",
+                                    color = palette.textTertiary,
+                                    fontSize = 10.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = activeTask.task.title,
+                                color = palette.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (activeTask.task.actualMinutes > 0) {
+                                Text(
+                                    text = "${activeTask.task.actualMinutes}m logged",
+                                    color = palette.textSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(palette.success)
+                                .clickable {
+                                    haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.LongPress)
+                                    onCompleteTask(activeTask.task.id)
+                                    selectedTaskIndex = -1
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Check,
+                                contentDescription = "Complete task",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            } else {
+                // No task selected — show general focus session card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(palette.surface)
+                        .border(1.dp, palette.borderSubtle, RoundedCornerShape(18.dp))
+                        .clickable {
+                            if (activeTasks.isNotEmpty()) {
+                                haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                showTaskPickerModal = true
+                            }
+                        }
+                        .padding(14.dp)
+                ) {
+                    Column {
+                        Text(
+                            text = if (activeTasks.isNotEmpty()) "NO TASK SELECTED ▾" else "GENERAL FOCUS",
+                            color = palette.textTertiary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = if (activeTasks.isNotEmpty()) "Tap to select a task, or run as general focus session" else "No tasks available — running as free focus session",
+                            color = palette.textSecondary,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+
+            // Set Time Duration Controls Card
+            val modeTitle = when (currentMode) {
+                PomodoroMode.WORK -> "FOCUS WORK DURATION"
+                PomodoroMode.SHORT_BREAK -> "SHORT BREAK DURATION"
+                PomodoroMode.LONG_BREAK -> "LONG BREAK DURATION"
+            }
+
+            val activeDurationSec = getModeSeconds(currentMode)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(if (isLight) Color(0xFFF2F2F7) else Color(0xFF1C1C24))
+                    .border(1.dp, palette.borderSubtle, RoundedCornerShape(20.dp))
+                    .padding(14.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = modeTitle,
+                            color = palette.accent,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .clickable { showDurationDialog = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = "Customize",
+                                tint = palette.textTertiary,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "CUSTOMIZE",
+                                color = palette.textTertiary,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+
+                    // Time Stepper Bar (-5m, -1m, Time Display, +1m, +5m)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            TimeStepperChip(label = "-5m", isLight = isLight, palette = palette) {
+                                val newSec = (activeDurationSec - 5 * 60).coerceAtLeast(60)
+                                updateModeDuration(currentMode, newSec)
+                            }
+                            TimeStepperChip(label = "-1m", isLight = isLight, palette = palette) {
+                                val newSec = (activeDurationSec - 60).coerceAtLeast(60)
+                                updateModeDuration(currentMode, newSec)
+                            }
+                        }
+
+                        val mins = activeDurationSec / 60
+                        val secs = activeDurationSec % 60
+                        Text(
+                            text = if (secs > 0) "${mins}m ${secs}s" else "${mins}m",
+                            color = palette.textPrimary,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            TimeStepperChip(label = "+1m", isLight = isLight, palette = palette) {
+                                val newSec = (activeDurationSec + 60).coerceAtMost(180 * 60)
+                                updateModeDuration(currentMode, newSec)
+                            }
+                            TimeStepperChip(label = "+5m", isLight = isLight, palette = palette) {
+                                val newSec = (activeDurationSec + 5 * 60).coerceAtMost(180 * 60)
+                                updateModeDuration(currentMode, newSec)
+                            }
+                        }
+                    }
+
+                    // Quick Preset Pills
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val presets = if (currentMode == PomodoroMode.WORK) {
+                            listOf(15, 25, 45, 60)
+                        } else if (currentMode == PomodoroMode.SHORT_BREAK) {
+                            listOf(3, 5, 10, 15)
+                        } else {
+                            listOf(10, 15, 20, 30)
+                        }
+
+                        presets.forEach { targetMin ->
+                            val targetSec = targetMin * 60
+                            val isPresetActive = activeDurationSec == targetSec
+
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(
+                                        if (isPresetActive) {
+                                            palette.accent.copy(alpha = 0.15f)
+                                        } else if (isLight) {
+                                            Color.White
+                                        } else {
+                                            Color(0xFF262630)
+                                        }
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isPresetActive) palette.accent.copy(alpha = 0.5f) else palette.borderSubtle,
+                                        RoundedCornerShape(10.dp)
+                                    )
+                                    .clickable {
+                                        haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove)
+                                        updateModeDuration(currentMode, targetSec)
+                                    }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "${targetMin}m",
+                                    color = if (isPresetActive) palette.accent else palette.textPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isPresetActive) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Overscroll padding so presets remain clear of floating bottom navbar
+            Spacer(modifier = Modifier.height(100.dp))
+        }
     }
 
     // Modal: Liquid Glass Task Selector

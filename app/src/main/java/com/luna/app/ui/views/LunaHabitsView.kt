@@ -325,15 +325,11 @@ private fun HabitCard(
             .background(palette.surface)
             .border(
                 width = if (isAchievedToday) 1.5.dp else 1.dp,
-                color = if (isAchievedToday) Color(0xFF22C55E).copy(alpha = 0.7f) else palette.borderSubtle,
+                color = if (isAchievedToday) palette.success.copy(alpha = 0.7f) else palette.borderSubtle,
                 shape = RoundedCornerShape(16.dp)
             )
             .combinedClickable(
-                onClick = {
-                    if (!isAchievedToday) {
-                        onToggleStep()
-                    }
-                },
+                onClick = onEdit,
                 onLongClick = { showDropdownMenu = true }
             )
             .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -350,7 +346,7 @@ private fun HabitCard(
                         .size(36.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(
-                            if (isAchievedToday) Color(0xFF22C55E).copy(alpha = 0.15f)
+                            if (isAchievedToday) palette.success.copy(alpha = 0.15f)
                             else palette.surfaceVariant
                         ),
                     contentAlignment = Alignment.Center
@@ -389,19 +385,19 @@ private fun HabitCard(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFF97316).copy(alpha = 0.12f))
+                                    .background(palette.warning.copy(alpha = 0.12f))
                                     .padding(horizontal = 5.dp, vertical = 1.5.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.LocalFireDepartment,
                                     contentDescription = "Streak",
-                                    tint = Color(0xFFF97316),
+                                    tint = palette.warning,
                                     modifier = Modifier.size(11.dp)
                                 )
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Text(
                                     text = "${habit.currentStreak}d",
-                                    color = Color(0xFFF97316),
+                                    color = palette.warning,
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -431,12 +427,12 @@ private fun HabitCard(
                                         .size(10.dp)
                                         .clip(CircleShape)
                                         .background(
-                                            if (isDotAchieved) Color(0xFF22C55E)
-                                            else palette.surfaceVariant
+                                            if (isDotAchieved) palette.success
+                                             else palette.surfaceVariant
                                         )
                                         .border(
                                             1.dp,
-                                            if (isDotAchieved) Color(0xFF22C55E) else palette.borderSubtle,
+                                            if (isDotAchieved) palette.success else palette.borderSubtle,
                                             CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -455,7 +451,7 @@ private fun HabitCard(
 
                         Text(
                             text = "$todayCount/$target today",
-                            color = if (isAchievedToday) Color(0xFF22C55E) else palette.textTertiary,
+                            color = if (isAchievedToday) palette.success else palette.textTertiary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -465,14 +461,18 @@ private fun HabitCard(
                 Spacer(modifier = Modifier.width(8.dp))
 
                 // Increment Action Button / Locked Completed Badge
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
                     if (isAchievedToday) {
                         // Locked Completed Badge until next day
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(Color(0xFF22C55E).copy(alpha = 0.18f))
-                                .border(1.dp, Color(0xFF22C55E).copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                .background(palette.success.copy(alpha = 0.18f))
+                                .border(1.dp, palette.success.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                .clickable(onClick = onEdit)
                                 .padding(horizontal = 8.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -483,12 +483,12 @@ private fun HabitCard(
                                 Icon(
                                     imageVector = Icons.Rounded.Check,
                                     contentDescription = "Done Today",
-                                    tint = Color(0xFF22C55E),
+                                    tint = palette.success,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Text(
-                                    text = "Done • Locked 🔒",
-                                    color = Color(0xFF22C55E),
+                                    text = "Done 🔒",
+                                    color = palette.success,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -498,8 +498,8 @@ private fun HabitCard(
                         // Increment Button
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(palette.accent)
                                 .clickable(onClick = onToggleStep),
                             contentAlignment = Alignment.Center
@@ -517,13 +517,13 @@ private fun HabitCard(
                     Box {
                         IconButton(
                             onClick = { showDropdownMenu = true },
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(36.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.MoreVert,
                                 contentDescription = "Options",
                                 tint = palette.textTertiary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
 
@@ -553,9 +553,9 @@ private fun HabitCard(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Delete Habit", color = Color(0xFFEF4444)) },
+                                text = { Text("Delete Habit", color = palette.danger) },
                                 leadingIcon = {
-                                    Icon(Icons.Rounded.Delete, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(18.dp))
+                                    Icon(Icons.Rounded.Delete, contentDescription = null, tint = palette.danger, modifier = Modifier.size(18.dp))
                                 },
                                 onClick = {
                                     showDropdownMenu = false
@@ -574,12 +574,12 @@ private fun HabitCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF22C55E).copy(alpha = 0.10f))
+                        .background(palette.success.copy(alpha = 0.10f))
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
                         text = "🎉 Goal finished! Great job — locked until tomorrow!",
-                        color = Color(0xFF22C55E),
+                        color = palette.success,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold
                     )
