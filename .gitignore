@@ -12,3 +12,6 @@ app/build/
 *.apk
 .kotlin/
 graphify-out/
+*.keystore
+*.jks
+keystore.properties

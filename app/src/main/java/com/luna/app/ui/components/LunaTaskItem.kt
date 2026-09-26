@@ -318,6 +318,11 @@ fun LunaTaskItem(
                         RecurrenceBadge(recurrenceRule = task.recurrenceRule)
                     }
 
+                    // Place / Location Badge
+                    if (!task.place.isNullOrBlank()) {
+                        PlaceBadge(place = task.place)
+                    }
+
                     // Attachment indicator
                     if (task.attachments.isNotEmpty()) {
                         AttachmentBadge(count = task.attachments.size)
@@ -718,6 +723,32 @@ private fun SubtaskCountBadge(
             color = if (isAllDone) palette.textPrimary else palette.textSecondary,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun PlaceBadge(
+    place: String,
+    modifier: Modifier = Modifier
+) {
+    val palette = LunaTheme.colors
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(palette.surfaceVariant)
+            .padding(horizontal = 7.dp, vertical = 2.5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text = "📍", fontSize = 10.sp)
+        Spacer(modifier = Modifier.width(3.dp))
+        Text(
+            text = place,
+            color = palette.textSecondary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

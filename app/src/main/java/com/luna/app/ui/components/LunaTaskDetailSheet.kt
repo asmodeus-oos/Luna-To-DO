@@ -50,6 +50,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -89,6 +90,7 @@ fun LunaTaskDetailSheet(
     val originalTask = taskWithDetails.task
     var title by remember { mutableStateOf(originalTask.title) }
     var notes by remember { mutableStateOf(originalTask.notes ?: "") }
+    var place by remember { mutableStateOf(originalTask.place ?: "") }
     var subtitles by remember { mutableStateOf(originalTask.subtitles) }
     var deadlineMode by remember { mutableStateOf(originalTask.deadlineMode) }
     val initialTotalMins = when (originalTask.durationUnit.uppercase()) {
@@ -278,6 +280,44 @@ fun LunaTaskDetailSheet(
                     innerTextField()
                 }
             )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Task Place / Location Input
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                Text(text = "📍", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                BasicTextField(
+                    value = place,
+                    onValueChange = { place = it },
+                    textStyle = TextStyle(
+                        color = palette.textPrimary,
+                        fontSize = 13.sp
+                    ),
+                    cursorBrush = SolidColor(palette.accent),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Next
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        if (place.isEmpty()) {
+                            Text(
+                                text = "Add place / location (e.g. Office, Home, Gym)",
+                                color = palette.textTertiary.copy(alpha = 0.8f),
+                                fontSize = 13.sp
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -966,7 +1006,8 @@ fun LunaTaskDetailSheet(
                             sectionName = sectionName.ifBlank { null },
                             dependsOnTaskId = dependsOnTaskId,
                             tags = tags,
-                            attachments = attachments
+                            attachments = attachments,
+                            place = place.trim().ifEmpty { null }
                         )
                         onSaveTask(updated)
                         onDismiss()

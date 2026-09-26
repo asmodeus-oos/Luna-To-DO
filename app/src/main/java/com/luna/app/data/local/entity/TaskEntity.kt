@@ -45,7 +45,8 @@ data class TaskEntity(
     val alarmOnStart: Boolean = false,
     val alarmOnFinish: Boolean = false,
     val weeklyDay: String? = null,  // e.g. "MON", "TUE", "WED"
-    val weeklyTime: String? = null  // e.g. "15:00"
+    val weeklyTime: String? = null, // e.g. "15:00"
+    val place: String? = null
 ) {
     /**
      * Total duration in milliseconds if duration mode is active

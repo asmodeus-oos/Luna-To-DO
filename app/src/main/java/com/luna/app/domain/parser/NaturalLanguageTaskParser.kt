@@ -10,12 +10,14 @@ data class ParsedTask(
     val dueDate: Long? = null,
     val dueTime: String? = null,
     val priority: Priority = Priority.NONE,
-    val tags: List<String> = emptyList()
+    val tags: List<String> = emptyList(),
+    val place: String? = null
 )
 
 object NaturalLanguageTaskParser {
 
     private val TAG_PATTERN = Pattern.compile("#([\\w-]+)", Pattern.CASE_INSENSITIVE)
+    private val PLACE_PATTERN = Pattern.compile("@([\\w-]+)", Pattern.CASE_INSENSITIVE)
     private val PRIORITY_PATTERN = Pattern.compile("\\b(p[1-4]|!urgent|!high|!med|!low)\\b", Pattern.CASE_INSENSITIVE)
     private val TIME_12H_PATTERN = Pattern.compile("\\b(?:at\\s+)?(1[0-2]|[1-9])(?::([0-5][0-9]))?\\s*(am|pm)\\b", Pattern.CASE_INSENSITIVE)
     private val TIME_24H_PATTERN = Pattern.compile("\\b(?:at\\s+)?([0-1]?[0-9]|2[0-3]):([0-5][0-9])\\b", Pattern.CASE_INSENSITIVE)
@@ -36,6 +38,14 @@ object NaturalLanguageTaskParser {
             tags.add(tagMatcher.group(1)!!.lowercase(Locale.getDefault()))
         }
         working = tagMatcher.replaceAll(" ")
+
+        // 1.5 Extract Place (@place)
+        var place: String? = null
+        val placeMatcher = PLACE_PATTERN.matcher(working)
+        if (placeMatcher.find()) {
+            place = placeMatcher.group(1)?.replace("_", " ")?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+            working = placeMatcher.replaceFirst(" ")
+        }
 
         // 2. Extract Priority
         var priority = Priority.NONE
@@ -161,7 +171,8 @@ object NaturalLanguageTaskParser {
             dueDate = dueDate,
             dueTime = timeLabel,
             priority = priority,
-            tags = tags
+            tags = tags,
+            place = place
         )
     }
 }

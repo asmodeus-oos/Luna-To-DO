@@ -610,7 +610,7 @@ fun HomeScreen(
                         viewModel.closeCreateSheet()
                         viewModel.openTemplatesSheet()
                     },
-                    onTaskCreated = { title, notes, subtitles, startDate, dueDate, dueTime, deadlineMode, durationValue, durationUnit, priority, tags, recurrence, subtasks, alarmOnStart, alarmOnFinish, weeklyDay, weeklyTime ->
+                    onTaskCreated = { title, notes, subtitles, startDate, dueDate, dueTime, deadlineMode, durationValue, durationUnit, priority, tags, recurrence, subtasks, alarmOnStart, alarmOnFinish, weeklyDay, weeklyTime, place ->
                         viewModel.addTask(
                             title = title,
                             notes = notes,
@@ -628,7 +628,8 @@ fun HomeScreen(
                             alarmOnStart = alarmOnStart,
                             alarmOnFinish = alarmOnFinish,
                             weeklyDay = weeklyDay,
-                            weeklyTime = weeklyTime
+                            weeklyTime = weeklyTime,
+                            place = place
                         )
                     }
                 )

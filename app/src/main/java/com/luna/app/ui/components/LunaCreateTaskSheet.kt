@@ -87,7 +87,8 @@ fun LunaCreateTaskSheet(
         alarmOnStart: Boolean,
         alarmOnFinish: Boolean,
         weeklyDay: String?,
-        weeklyTime: String?
+        weeklyTime: String?,
+        place: String?
     ) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -98,6 +99,7 @@ fun LunaCreateTaskSheet(
 
     var rawInput by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
+    var place by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf(Priority.NONE) }
     var selectedRecurrence by remember { mutableStateOf(RecurrenceType.NONE) }
     var deadlineMode by remember { mutableStateOf("FIXED") } // "FIXED" or "DURATION"
@@ -151,6 +153,11 @@ fun LunaCreateTaskSheet(
     LaunchedEffect(parsed.dueTime) {
         if (parsed.dueTime != null) {
             hasExactTime = true
+        }
+    }
+    LaunchedEffect(parsed.place) {
+        parsed.place?.let {
+            if (place.isBlank()) place = it
         }
     }
 
@@ -365,7 +372,44 @@ fun LunaCreateTaskSheet(
                 }
             )
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Task Place / Location Input
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(palette.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            ) {
+                Text(text = "📍", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                BasicTextField(
+                    value = place,
+                    onValueChange = { place = it },
+                    textStyle = TextStyle(
+                        color = palette.textPrimary,
+                        fontSize = 13.sp
+                    ),
+                    cursorBrush = SolidColor(palette.accent),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Words,
+                        imeAction = ImeAction.Next
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        if (place.isEmpty()) {
+                            Text(
+                                text = "Add place / location (e.g. Office, Home, Gym)",
+                                color = palette.textTertiary.copy(alpha = 0.8f),
+                                fontSize = 13.sp
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+            }
 
             Spacer(modifier = Modifier.height(18.dp))
 
@@ -1017,7 +1061,8 @@ fun LunaCreateTaskSheet(
                                 alarmOnStart,
                                 alarmOnFinish,
                                 if (selectedRecurrence == RecurrenceType.WEEKLY) weeklyDay else null,
-                                if (selectedRecurrence == RecurrenceType.WEEKLY) String.format(java.util.Locale.US, "%02d:%02d %s", if (weeklyTimeHour == 0) 12 else if (weeklyTimeHour > 12) weeklyTimeHour - 12 else weeklyTimeHour, weeklyTimeMinute, if (weeklyTimeIsAm) "AM" else "PM") else null
+                                if (selectedRecurrence == RecurrenceType.WEEKLY) String.format(java.util.Locale.US, "%02d:%02d %s", if (weeklyTimeHour == 0) 12 else if (weeklyTimeHour > 12) weeklyTimeHour - 12 else weeklyTimeHour, weeklyTimeMinute, if (weeklyTimeIsAm) "AM" else "PM") else null,
+                                place.trim().ifEmpty { null }
                             )
                             onDismiss()
                         }

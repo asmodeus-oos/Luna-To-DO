@@ -393,7 +393,8 @@ class TaskViewModel(
         alarmOnStart: Boolean = false,
         alarmOnFinish: Boolean = false,
         weeklyDay: String? = null,
-        weeklyTime: String? = null
+        weeklyTime: String? = null,
+        place: String? = null
     ) {
         viewModelScope.launch {
             val taskId = repository.addTask(
@@ -413,7 +414,8 @@ class TaskViewModel(
                 alarmOnStart = alarmOnStart,
                 alarmOnFinish = alarmOnFinish,
                 weeklyDay = weeklyDay,
-                weeklyTime = weeklyTime
+                weeklyTime = weeklyTime,
+                place = place
             )
             if (dueDate != null && dueDate > System.currentTimeMillis()) {
                 val task = repository.getTaskById(taskId)

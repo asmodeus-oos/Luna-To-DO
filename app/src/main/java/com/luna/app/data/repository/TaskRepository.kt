@@ -45,7 +45,8 @@ interface TaskRepository {
         alarmOnStart: Boolean = false,
         alarmOnFinish: Boolean = false,
         weeklyDay: String? = null,
-        weeklyTime: String? = null
+        weeklyTime: String? = null,
+        place: String? = null
     ): Long
 
     suspend fun updateTask(task: TaskEntity)
