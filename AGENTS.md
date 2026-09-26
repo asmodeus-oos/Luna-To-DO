@@ -32,6 +32,11 @@ For each version created:
 4. **Local Device Deployment**:
    - Whenever an Android physical device or emulator is connected via ADB, install the updated signed APK via `adb install -r -d` and launch for immediate user validation.
 
-## 3. Security & Signing Protocols
+## 3. App Settings & UI Version Tracking Rule
+- The version string displayed in the App Settings "About" section and across any UI surface MUST dynamically derive from `BuildConfig.VERSION_NAME` (via `LunaAttribution.APP_VERSION`).
+- Hardcoding static version numbers in UI components or data models is strictly prohibited.
+- When `versionName` or `versionCode` is updated in `app/build.gradle.kts`, the Settings About section must automatically reflect the new version code and name upon build without manual edits.
+
+## 4. Security & Signing Protocols
 - Never commit `release.keystore`, `*.jks`, or `keystore.properties` to version control.
 - Restrict release builds to `arm64-v8a` architecture unless multi-ABI is explicitly requested.
