@@ -888,7 +888,7 @@ fun LunaSettingsSheet(
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Icon(
-                                    imageVector = UntitledIcons.Download,
+                                    imageVector = UntitledIcons.Upload,
                                     contentDescription = "Export JSON",
                                     tint = palette.textPrimary,
                                     modifier = Modifier.size(13.dp)
@@ -945,7 +945,7 @@ fun LunaSettingsSheet(
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Icon(
-                                    imageVector = UntitledIcons.Upload,
+                                    imageVector = UntitledIcons.Download,
                                     contentDescription = "Import JSON",
                                     tint = palette.accent,
                                     modifier = Modifier.size(13.dp)
