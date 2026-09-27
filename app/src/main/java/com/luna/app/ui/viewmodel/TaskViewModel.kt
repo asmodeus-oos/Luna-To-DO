@@ -17,6 +17,10 @@ import com.luna.app.data.preferences.AppThemeMode
 import com.luna.app.data.preferences.UserPreferencesRepository
 import com.luna.app.data.repository.TaskRepository
 import com.luna.app.domain.model.AppViewMode
+import android.content.Context
+import android.net.Uri
+import com.luna.app.data.backup.BackupResult
+import com.luna.app.data.backup.LunaBackupManager
 import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.SmartFilter
 import com.luna.app.domain.model.TaskFilter
@@ -675,6 +679,68 @@ class TaskViewModel(
             _editingTask.value = null
             if (uiState.value.isSoundEnabled) {
                 soundPlayer.playComplete()
+            }
+        }
+    }
+
+    // --- Backup & Restore (Full Data Export & Import) ---
+    private val _backupStatus = MutableStateFlow<String?>(null)
+    val backupStatus: StateFlow<String?> = _backupStatus.asStateFlow()
+
+    fun dismissBackupStatus() {
+        _backupStatus.value = null
+    }
+
+    fun exportBackupToUri(context: Context, uri: Uri, onResult: ((Boolean, String) -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                val json = LunaBackupManager.exportBackupJson(repository, preferencesRepository)
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    output.write(json.toByteArray(Charsets.UTF_8))
+                }
+                val msg = "✓ Luna backup exported successfully!"
+                _backupStatus.value = msg
+                if (uiState.value.isSoundEnabled) {
+                    soundPlayer.playComplete()
+                }
+                onResult?.invoke(true, msg)
+            } catch (e: Exception) {
+                val err = "Export failed: ${e.localizedMessage}"
+                _backupStatus.value = err
+                onResult?.invoke(false, err)
+            }
+        }
+    }
+
+    fun importBackupFromUri(context: Context, uri: Uri, onResult: ((BackupResult) -> Unit)? = null) {
+        viewModelScope.launch {
+            try {
+                val jsonString = context.contentResolver.openInputStream(uri)?.use { input ->
+                    input.bufferedReader().use { it.readText() }
+                } ?: ""
+
+                if (jsonString.isBlank()) {
+                    val fail = BackupResult(false, errorMessage = "Selected file is empty")
+                    _backupStatus.value = fail.summary
+                    onResult?.invoke(fail)
+                    return@launch
+                }
+
+                val result = LunaBackupManager.importBackupJson(
+                    jsonString = jsonString,
+                    repository = repository,
+                    preferences = preferencesRepository,
+                    alarmScheduler = alarmScheduler
+                )
+                _backupStatus.value = result.summary
+                if (result.success && uiState.value.isSoundEnabled) {
+                    soundPlayer.playComplete()
+                }
+                onResult?.invoke(result)
+            } catch (e: Exception) {
+                val fail = BackupResult(false, errorMessage = "Import failed: ${e.localizedMessage}")
+                _backupStatus.value = fail.summary
+                onResult?.invoke(fail)
             }
         }
     }

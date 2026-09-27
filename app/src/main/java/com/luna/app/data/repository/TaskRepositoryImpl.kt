@@ -21,6 +21,7 @@ import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.RecurrenceType
 import com.luna.app.domain.model.TaskStatus
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -297,6 +298,82 @@ class TaskRepositoryImpl(
 
     override suspend fun deleteCompletedTasksBefore(cutoffEpochMillis: Long): Int {
         return taskDao.deleteCompletedTasksBefore(cutoffEpochMillis)
+    }
+
+    override suspend fun getAllTasksWithDetailsList(): List<TaskWithDetails> {
+        return taskDao.getTasksWithDetailsFlow().first()
+    }
+
+    override suspend fun importTaskWithSubtasks(task: TaskEntity, subtasks: List<SubtaskEntity>): Long {
+        val allTasks = taskDao.getAllTasksFlow().first()
+        val existing = allTasks.firstOrNull { 
+            it.title.equals(task.title, ignoreCase = true) && 
+            it.weeklyDay == task.weeklyDay && 
+            it.weeklyTime == task.weeklyTime 
+        } ?: allTasks.firstOrNull {
+            task.weeklyDay == null && it.title.equals(task.title, ignoreCase = true) && !it.isCompleted
+        }
+
+        val taskId = if (existing != null) {
+            val updated = task.copy(id = existing.id)
+            taskDao.updateTask(updated)
+            existing.id
+        } else {
+            taskDao.insertTask(task.copy(id = 0L))
+        }
+
+        if (subtasks.isNotEmpty()) {
+            val existingSubtasks = taskDao.getSubtasksForTask(taskId)
+            val subtasksToInsert = subtasks.filter { newSub ->
+                existingSubtasks.none { it.title.equals(newSub.title, ignoreCase = true) }
+            }.map {
+                it.copy(id = 0L, taskId = taskId)
+            }
+            if (subtasksToInsert.isNotEmpty()) {
+                taskDao.insertSubtasks(subtasksToInsert)
+            }
+        }
+        return taskId
+    }
+
+    override suspend fun importHabit(habit: HabitEntity): Long {
+        val existing = habitDao.getAllHabitsFlow().first().firstOrNull { it.name.equals(habit.name, ignoreCase = true) }
+        return if (existing != null) {
+            habitDao.updateHabit(habit.copy(id = existing.id))
+            existing.id
+        } else {
+            habitDao.insertHabit(habit.copy(id = 0L))
+        }
+    }
+
+    override suspend fun importRoutine(routine: RoutineEntity): Long {
+        val existing = routineDao.getAllRoutinesFlow().first().firstOrNull { it.name.equals(routine.name, ignoreCase = true) }
+        return if (existing != null) {
+            routineDao.updateRoutine(routine.copy(id = existing.id))
+            existing.id
+        } else {
+            routineDao.insertRoutine(routine.copy(id = 0L))
+        }
+    }
+
+    override suspend fun importProject(project: ProjectEntity): Long {
+        val existing = projectDao.getAllProjectsFlow().first().firstOrNull { it.name.equals(project.name, ignoreCase = true) }
+        return if (existing != null) {
+            projectDao.updateProject(project.copy(id = existing.id))
+            existing.id
+        } else {
+            projectDao.insertProject(project.copy(id = 0L))
+        }
+    }
+
+    override suspend fun importGoal(goal: GoalEntity): Long {
+        val existing = goalDao.getAllGoalsFlow().first().firstOrNull { it.title.equals(goal.title, ignoreCase = true) }
+        return if (existing != null) {
+            goalDao.updateGoal(goal.copy(id = existing.id))
+            existing.id
+        } else {
+            goalDao.insertGoal(goal.copy(id = 0L))
+        }
     }
 
     // --- Countdown, Deadline & Accountability ---

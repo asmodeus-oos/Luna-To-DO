@@ -60,6 +60,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import com.luna.app.data.preferences.AppThemeMode
 import com.luna.app.ui.icons.UntitledIcons
 import com.luna.app.ui.theme.LunaTheme
+import android.net.Uri
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -97,6 +100,10 @@ fun LunaSettingsSheet(
     onClearCompleted: () -> Unit,
     onClearAllData: () -> Unit = {},
     onImportTimetable: () -> Unit = {},
+    onExportBackup: (Uri) -> Unit = {},
+    onImportBackup: (Uri) -> Unit = {},
+    backupStatusMessage: String? = null,
+    onDismissBackupStatus: () -> Unit = {},
     completedCount: Int,
     totalCount: Int,
     onDismiss: () -> Unit,
@@ -143,6 +150,24 @@ fun LunaSettingsSheet(
                     onSetUserCoverPath(newCover.absolutePath)
                 }
             } catch (_: Throwable) {}
+        }
+    }
+
+    val exportBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        uri?.let {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onExportBackup(it)
+        }
+    }
+
+    val importBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        uri?.let {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onImportBackup(it)
         }
     }
 
@@ -824,7 +849,162 @@ fun LunaSettingsSheet(
 
             AppleGlassCard {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    // Option 1: Clear Completed Tasks Only
+                    // Option 1: Export All Data & Tasks (JSON)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Export All Data (JSON)",
+                                color = palette.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Backup all tasks, timetable sessions, habits, routines & settings",
+                                color = palette.textSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(palette.surfaceVariant)
+                                .border(1.dp, palette.borderSubtle, RoundedCornerShape(10.dp))
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                                    exportBackupLauncher.launch("Luna_Backup_$timestamp.json")
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = UntitledIcons.Download,
+                                    contentDescription = "Export JSON",
+                                    tint = palette.textPrimary,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = "Export",
+                                    color = palette.textPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = palette.borderSubtle, thickness = 0.5.dp)
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Option 2: Import All Data & Tasks (JSON)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Import All Data (JSON)",
+                                color = palette.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Restore tasks, timetable sessions, habits & alarms from backup",
+                                color = palette.textSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(palette.accent.copy(alpha = 0.15f))
+                                .border(1.dp, palette.accent.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    importBackupLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                                }
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Icon(
+                                    imageVector = UntitledIcons.Upload,
+                                    contentDescription = "Import JSON",
+                                    tint = palette.accent,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                                Text(
+                                    text = "Import",
+                                    color = palette.accent,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    if (!backupStatusMessage.isNullOrBlank()) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        val isSuccess = backupStatusMessage.startsWith("✓")
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isSuccess) Color(0x1A10B981) else Color(0x1AEF4444))
+                                .border(1.dp, if (isSuccess) Color(0x4D10B981) else Color(0x4DEF4444), RoundedCornerShape(10.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = backupStatusMessage,
+                                    color = if (isSuccess) Color(0xFF10B981) else Color(0xFFEF4444),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable { onDismissBackupStatus() }
+                                        .padding(4.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = UntitledIcons.Close,
+                                        contentDescription = "Dismiss",
+                                        tint = if (isSuccess) Color(0xFF10B981) else Color(0xFFEF4444),
+                                        modifier = Modifier.size(12.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+                    HorizontalDivider(color = palette.borderSubtle, thickness = 0.5.dp)
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Option 3: Clear Completed Tasks Only
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -873,7 +1053,7 @@ fun LunaSettingsSheet(
                     HorizontalDivider(color = palette.borderSubtle, thickness = 0.5.dp)
                     Spacer(modifier = Modifier.height(14.dp))
 
-                    // Option 2: Remove All Tasks, Routines & Habits (Full Wipe)
+                    // Option 4: Remove All Tasks, Routines & Habits (Full Wipe)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,

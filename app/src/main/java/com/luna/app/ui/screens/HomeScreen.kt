@@ -55,6 +55,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,6 +106,8 @@ fun HomeScreen(
     val taskToDeleteWithReason by viewModel.taskToDeleteWithReason.collectAsState()
     val palette = LunaTheme.colors
     val haptic = LocalHapticFeedback.current
+    val context = LocalContext.current
+    val backupStatus by viewModel.backupStatus.collectAsState()
 
     val listState = rememberLazyListState()
     var pendingScrollAnchor by remember { mutableStateOf<Pair<Int, Int>?>(null) }
@@ -762,6 +765,16 @@ fun HomeScreen(
                     },
                     onImportTimetable = {
                         viewModel.injectDentalTimetable()
+                    },
+                    onExportBackup = { uri ->
+                        viewModel.exportBackupToUri(context, uri)
+                    },
+                    onImportBackup = { uri ->
+                        viewModel.importBackupFromUri(context, uri)
+                    },
+                    backupStatusMessage = backupStatus,
+                    onDismissBackupStatus = {
+                        viewModel.dismissBackupStatus()
                     },
                     completedCount = uiState.smartCounts[SmartFilter.COMPLETED] ?: 0,
                     totalCount = uiState.rawTasks.size,

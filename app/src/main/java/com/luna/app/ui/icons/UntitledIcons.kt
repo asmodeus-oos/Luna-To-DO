@@ -992,4 +992,59 @@ object UntitledIcons {
             fill = SolidColor(Color.Black)
         ).build()
     }
+
+    val Download: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "UntitledDownload",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(
+            stroke = SolidColor(Color.Black),
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        ) {
+            moveTo(21f, 15f)
+            lineTo(21f, 19f)
+            arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 19f, 21f)
+            lineTo(5f, 21f)
+            arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 3f, 19f)
+            lineTo(3f, 15f)
+            moveTo(7f, 10f)
+            lineTo(12f, 15f)
+            lineTo(17f, 10f)
+            moveTo(12f, 15f)
+            lineTo(12f, 3f)
+        }.build()
+    }
+
+    val Upload: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "UntitledUpload",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).path(
+            stroke = SolidColor(Color.Black),
+            strokeLineWidth = 2f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        ) {
+            moveTo(21f, 15f)
+            lineTo(21f, 19f)
+            arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 19f, 21f)
+            lineTo(5f, 21f)
+            arcTo(2f, 2f, 0f, isMoreThanHalf = false, isPositiveArc = true, 3f, 19f)
+            lineTo(3f, 15f)
+            moveTo(17f, 8f)
+            lineTo(12f, 3f)
+            lineTo(7f, 8f)
+            moveTo(12f, 3f)
+            lineTo(12f, 15f)
+        }.build()
+    }
 }
+

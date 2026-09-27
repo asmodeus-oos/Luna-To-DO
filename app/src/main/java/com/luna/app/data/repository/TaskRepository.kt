@@ -66,6 +66,14 @@ interface TaskRepository {
     suspend fun clearAllData()
     suspend fun deleteCompletedTasksBefore(cutoffEpochMillis: Long): Int
 
+    // Backup & Import
+    suspend fun getAllTasksWithDetailsList(): List<TaskWithDetails>
+    suspend fun importTaskWithSubtasks(task: TaskEntity, subtasks: List<SubtaskEntity>): Long
+    suspend fun importHabit(habit: HabitEntity): Long
+    suspend fun importRoutine(routine: RoutineEntity): Long
+    suspend fun importProject(project: ProjectEntity): Long
+    suspend fun importGoal(goal: GoalEntity): Long
+
     // Countdown & Deadline
     suspend fun startTask(id: Long)
     suspend fun extendTaskDeadline(id: Long, additionalMinutes: Int)
