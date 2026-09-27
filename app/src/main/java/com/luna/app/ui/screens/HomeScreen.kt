@@ -91,6 +91,7 @@ import com.luna.app.ui.views.LunaMatrixView
 import com.luna.app.ui.views.LunaProjectsView
 import com.luna.app.ui.views.LunaRoutinesView
 import com.luna.app.ui.views.LunaSettingsView
+import com.luna.app.ui.views.LunaTimetableScheduleView
 import kotlinx.coroutines.launch
 
 @Composable
@@ -165,12 +166,6 @@ fun HomeScreen(
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             }
                             viewModel.toggleSound()
-                        },
-                        onOpenSettings = {
-                            if (uiState.isHapticsEnabled) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            }
-                            viewModel.openSettings()
                         }
                     )
                 }
@@ -421,6 +416,14 @@ fun HomeScreen(
                                             }
                                         }
                                     }
+                                }
+                                AppViewMode.TIMETABLE -> {
+                                    LunaTimetableScheduleView(
+                                        tasks = uiState.allTasks,
+                                        onTaskClick = { viewModel.openTaskDetail(it) },
+                                        onSeedTimetable = { viewModel.injectDentalTimetable(overwrite = true) },
+                                        onTestAlarm = { isStart -> viewModel.testTimetableAlarm(isStart) }
+                                    )
                                 }
                                 AppViewMode.CALENDAR -> {
                                     LunaCalendarView(
@@ -756,6 +759,9 @@ fun HomeScreen(
                     },
                     onClearAllData = {
                         viewModel.clearAllData()
+                    },
+                    onImportTimetable = {
+                        viewModel.injectDentalTimetable()
                     },
                     completedCount = uiState.smartCounts[SmartFilter.COMPLETED] ?: 0,
                     totalCount = uiState.rawTasks.size,

@@ -42,11 +42,21 @@ class LunaApplication : Application() {
 
         LunaNotificationHelper.createNotificationChannels(this)
 
-        seedWelcomeTasksIfFirstRun()
+        seedDentalTimetableAndAlarms()
     }
 
-    private fun seedWelcomeTasksIfFirstRun() {
-        val prefs = getSharedPreferences("luna_fast_cache", MODE_PRIVATE)
-        prefs.edit().putBoolean("has_seeded_initial_data", true).apply()
+    private fun seedDentalTimetableAndAlarms() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val alarmScheduler = com.luna.app.notification.LunaAlarmScheduler(this@LunaApplication)
+                com.luna.app.data.local.DentalTimetableSeeder.seed(
+                    repository = taskRepository,
+                    alarmScheduler = alarmScheduler,
+                    overwrite = false
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("LunaApplication", "Auto-seed timetable failed: ${e.message}")
+            }
+        }
     }
 }

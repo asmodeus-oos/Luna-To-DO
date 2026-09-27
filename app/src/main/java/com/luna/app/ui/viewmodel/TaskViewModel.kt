@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.luna.app.audio.TactileSoundPlayer
+import com.luna.app.data.local.DentalTimetableSeeder
 import com.luna.app.data.local.entity.GoalEntity
 import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.entity.ProjectEntity
@@ -431,6 +432,20 @@ class TaskViewModel(
         if (title.isNotBlank()) {
             addTask(title = title.trim())
         }
+    }
+
+    fun injectDentalTimetable(overwrite: Boolean = false, onComplete: ((Int) -> Unit)? = null) {
+        viewModelScope.launch {
+            val inserted = DentalTimetableSeeder.seed(repository, alarmScheduler = alarmScheduler, overwrite = overwrite)
+            if (inserted > 0 && uiState.value.isSoundEnabled) {
+                soundPlayer.playAdd()
+            }
+            onComplete?.invoke(inserted)
+        }
+    }
+
+    fun testTimetableAlarm(isStart: Boolean) {
+        alarmScheduler?.scheduleTestAlarm(isStart = isStart, delaySeconds = 10)
     }
 
     fun completeOnboarding(name: String, coverTitle: String, gender: String, themeMode: AppThemeMode) {
@@ -1079,33 +1094,43 @@ class TaskViewModel(
         val tomorrowEnd = getEndOfDayMillis(1)
         val weekEnd = getEndOfDayMillis(7)
 
+        val chronologicalComparator = compareBy<TaskWithDetails> { it.task.isCompleted }
+            .thenBy { it.task.dueDate ?: it.task.startDate ?: Long.MAX_VALUE }
+            .thenBy { it.task.dueTime ?: it.task.weeklyTime ?: "23:59" }
+            .thenBy { it.task.orderIndex }
+
         val byFilter = when (smartFilter) {
             SmartFilter.TODAY -> tasks.filter { item ->
                 item.task.dueDate == null || item.task.dueDate in todayStart..todayEnd || item.task.dueDate < todayStart
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.TOMORROW -> tasks.filter { item ->
                 item.task.dueDate != null && item.task.dueDate in tomorrowStart..tomorrowEnd
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.THIS_WEEK -> tasks.filter { item ->
                 item.task.dueDate != null && item.task.dueDate in todayStart..weekEnd
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.OVERDUE -> tasks.filter { item ->
                 !item.task.isCompleted && item.task.dueDate != null && item.task.dueDate < todayStart
-            }
+            }.sortedWith(
+                compareBy<TaskWithDetails> { it.task.dueDate ?: 0L }
+                    .thenBy { it.task.dueTime ?: "00:00" }
+            )
             SmartFilter.HIGH_PRIORITY -> tasks.filter { item ->
                 item.task.priority == Priority.P1
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.DEEP_WORK -> tasks.filter { item ->
                 item.task.energyLevel == "HIGH"
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.QUICK_WINS -> tasks.filter { item ->
                 item.task.energyLevel == "LOW" || item.task.estimatedMinutes in 1..15
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
+            }.sortedWith(chronologicalComparator)
             SmartFilter.PINNED -> tasks.filter { item ->
                 item.task.isPinned
-            }.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
-            SmartFilter.ALL -> tasks.sortedWith(compareBy({ it.task.isCompleted }, { it.task.orderIndex }))
-            SmartFilter.COMPLETED -> tasks.filter { it.task.isCompleted }
+            }.sortedWith(chronologicalComparator)
+            SmartFilter.ALL -> tasks.sortedWith(chronologicalComparator)
+            SmartFilter.COMPLETED -> tasks.filter { it.task.isCompleted }.sortedWith(
+                compareByDescending<TaskWithDetails> { it.task.completedAt ?: it.task.dueDate ?: 0L }
+            )
         }
 
         val byEnergy = if (energyFilter != "ALL") {

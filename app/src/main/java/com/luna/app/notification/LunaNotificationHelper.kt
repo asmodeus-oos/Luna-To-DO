@@ -86,4 +86,67 @@ object LunaNotificationHelper {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, notification)
     }
+
+    fun showTimetableSessionNotification(
+        context: Context,
+        taskId: Long,
+        taskTitle: String,
+        alarmType: String,
+        sessionType: String = "Lecture",
+        place: String? = null,
+        group: String? = null
+    ) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("EXTRA_TASK_ID", taskId)
+            putExtra("EXTRA_NAV_VIEW", "TIMETABLE")
+        }
+
+        val isStart = alarmType.equals("START", ignoreCase = true)
+        val isClinic = sessionType.contains("Clinic", ignoreCase = true) || taskTitle.contains("Clinic", ignoreCase = true)
+        val iconEmoji = if (isClinic) "🦷" else "📚"
+
+        val notificationId = if (isStart) {
+            20000 + (taskId % 10000L).toInt()
+        } else {
+            30000 + (taskId % 10000L).toInt()
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val title = if (isStart) {
+            "$iconEmoji $sessionType Starting Now: $taskTitle"
+        } else {
+            "🏁 Session Completed: $taskTitle"
+        }
+
+        val locationText = place?.let { "📍 Room: $it" } ?: "📍 Campus"
+        val groupText = group?.let { " • Group: $it" } ?: ""
+
+        val content = if (isStart) {
+            "$locationText$groupText • Class is starting now. Tap to view notes & attendance."
+        } else {
+            "$locationText • Session finished! Great job. Tap to review tasks in Luna."
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_TASK_ALARMS)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .build()
+
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.notify(notificationId, notification)
+    }
 }

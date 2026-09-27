@@ -96,6 +96,7 @@ fun LunaSettingsSheet(
     onSelectTimezone: (String) -> Unit,
     onClearCompleted: () -> Unit,
     onClearAllData: () -> Unit = {},
+    onImportTimetable: () -> Unit = {},
     completedCount: Int,
     totalCount: Int,
     onDismiss: () -> Unit,
@@ -151,6 +152,7 @@ fun LunaSettingsSheet(
     var tempCoverTitleInput by remember(coverTitle) { mutableStateOf(coverTitle) }
     var isClearedRecently by remember { mutableStateOf(false) }
     var isAllWipedRecently by remember { mutableStateOf(false) }
+    var isTimetableImported by remember { mutableStateOf(false) }
     var showWipeConfirmDialog by remember { mutableStateOf(false) }
 
     var showCountryPicker by remember { mutableStateOf(false) }
@@ -761,6 +763,57 @@ fun LunaSettingsSheet(
                     isChecked = autoDeleteCompletedDaily,
                     onCheckedChange = { onToggleAutoDeleteDaily(it) }
                 )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ACADEMIC TIMETABLE SECTION
+            SectionHeader(title = "ACADEMIC TIMETABLE", icon = UntitledIcons.Calendar)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            AppleGlassCard {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Dentistry · Level 4 Timetable",
+                                color = palette.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isTimetableImported) "✓ 13 Sessions loaded (Lectures + Clinics)" else "Import Fall 2026-2027 weekly schedule (13 sessions, 20h)",
+                                color = if (isTimetableImported) Color(0xFF10B981) else palette.textSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(palette.accent)
+                                .clickable {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onImportTimetable()
+                                    isTimetableImported = true
+                                }
+                                .padding(horizontal = 12.dp, vertical = 7.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isTimetableImported) "✓ Imported" else "Import Now",
+                                color = palette.chipTextSelected,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(20.dp))

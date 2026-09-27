@@ -40,7 +40,6 @@ fun LunaHeader(
     isSoundEnabled: Boolean,
     onToggleTheme: () -> Unit,
     onToggleSound: () -> Unit,
-    onOpenSettings: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val palette = LunaTheme.colors
@@ -136,20 +135,6 @@ fun LunaHeader(
                         )
                     }
                 )
-
-                if (onOpenSettings != null) {
-                    HeaderIconButton(
-                        onClick = onOpenSettings,
-                        icon = {
-                            Icon(
-                                imageVector = UntitledIcons.SlidersSettings,
-                                contentDescription = "Settings",
-                                tint = palette.textSecondary,
-                                modifier = Modifier.size(17.dp)
-                            )
-                        }
-                    )
-                }
             }
         }
     }

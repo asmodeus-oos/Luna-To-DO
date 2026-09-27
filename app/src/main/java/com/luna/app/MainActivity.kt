@@ -42,6 +42,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        handleIntent(intent)
         requestAllRequiredPermissions()
 
         setContent {
@@ -50,6 +51,18 @@ class MainActivity : ComponentActivity() {
             LunaTheme(themeMode = uiState.themeMode) {
                 HomeScreen(viewModel = viewModel)
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getStringExtra("EXTRA_NAV_VIEW") == "TIMETABLE") {
+            viewModel.selectViewMode(com.luna.app.domain.model.AppViewMode.TIMETABLE)
         }
     }
 

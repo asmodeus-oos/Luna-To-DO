@@ -83,7 +83,7 @@ fun LunaViewSelector(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = mode.label,
+                    text = "${mode.icon} ${mode.label}",
                     color = textColor,
                     fontSize = 12.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium

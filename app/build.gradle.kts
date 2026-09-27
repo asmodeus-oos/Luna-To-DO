@@ -16,14 +16,15 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.luna.app"
-    compileSdk = 35
+    compileSdk = 36
+    buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "com.luna.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 103
-        versionName = "1.0.3"
+        versionCode = 106
+        versionName = "1.0.6"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

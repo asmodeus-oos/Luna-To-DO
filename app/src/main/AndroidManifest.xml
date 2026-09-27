@@ -41,6 +41,14 @@
             android:exported="false" />
 
         <receiver
+            android:name=".notification.TimetableReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.luna.app.ACTION_INJECT_TIMETABLE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
             android:name=".notification.BootCompletedReceiver"
             android:enabled="true"
             android:exported="true">
