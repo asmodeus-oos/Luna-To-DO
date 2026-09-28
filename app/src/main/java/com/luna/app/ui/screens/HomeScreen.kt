@@ -94,7 +94,7 @@ import com.luna.app.ui.views.LunaProjectsView
 import com.luna.app.ui.views.LunaRoutinesView
 import com.luna.app.ui.views.LunaSettingsView
 import com.luna.app.ui.views.LunaTimetableScheduleView
-import com.luna.app.ui.views.LunaWealthView
+import com.luna.app.ui.views.LunaFinanceView
 import kotlinx.coroutines.launch
 
 @Composable
@@ -517,8 +517,8 @@ fun HomeScreen(
                             }
                         }
                     }
-                    LunaNavTab.WEALTH -> {
-                        LunaWealthView(
+                    LunaNavTab.FINANCE -> {
+                        LunaFinanceView(
                             transactions = uiState.transactions,
                             accounts = uiState.accounts,
                             budgets = uiState.budgets,
@@ -659,7 +659,7 @@ fun HomeScreen(
                                 if (uiState.isHapticsEnabled) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
-                                if (pagerState.currentPage == LunaNavTab.WEALTH.ordinal) {
+                                if (pagerState.currentPage == LunaNavTab.FINANCE.ordinal) {
                                     viewModel.openCreateTransactionSheet()
                                 } else {
                                     viewModel.openCreateSheet()

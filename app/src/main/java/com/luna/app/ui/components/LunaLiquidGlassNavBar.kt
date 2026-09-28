@@ -51,7 +51,7 @@ import com.luna.app.ui.theme.LunaTheme
 enum class LunaNavTab {
     HOME,
     TASKS,
-    WEALTH,
+    FINANCE,
     STATS
 }
 
@@ -135,7 +135,7 @@ fun LunaLiquidGlassNavBar(
                 val tabCount = 4
                 val isHomeSelected = selectedTab == LunaNavTab.HOME
                 val isTasksSelected = selectedTab == LunaNavTab.TASKS
-                val isWealthSelected = selectedTab == LunaNavTab.WEALTH
+                val isFinanceSelected = selectedTab == LunaNavTab.FINANCE
                 val isStatsSelected = selectedTab == LunaNavTab.STATS
 
                 val animatedIndex by animateFloatAsState(
@@ -236,13 +236,13 @@ fun LunaLiquidGlassNavBar(
                     )
                     NavBarTabItem(
                         icon = UntitledIcons.WalletTab,
-                        label = "Wealth",
+                        label = "Finance",
                         showLabel = showTabLabels,
-                        isSelected = isWealthSelected,
+                        isSelected = isFinanceSelected,
                         isLight = isLight,
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onTabSelected(LunaNavTab.WEALTH)
+                            onTabSelected(LunaNavTab.FINANCE)
                         },
                         modifier = Modifier.weight(1f)
                     )
