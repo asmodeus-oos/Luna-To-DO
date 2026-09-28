@@ -49,6 +49,7 @@ import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.domain.model.AchievementBadge
 import com.luna.app.domain.model.Priority
+import com.luna.app.domain.model.TaskStatus
 import com.luna.app.ui.theme.LunaShapes
 import com.luna.app.ui.theme.LunaTheme
 import java.text.SimpleDateFormat
@@ -68,14 +69,20 @@ fun LunaAnalyticsView(
     val scrollState = rememberScrollState()
 
     val totalTasks = tasks.size
-    val completedTasks = tasks.count { it.task.isCompleted }
+    val completedTasks = tasks.count {
+        it.task.isCompleted &&
+        it.task.status != TaskStatus.FAILED_LOGGED
+    }
     val completionRate = if (totalTasks > 0) (completedTasks * 100 / totalTasks) else 0
 
     val totalMinutesLogged = tasks.sumOf { it.task.actualMinutes }
     val activeHabitStreaks = habits.sumOf { it.currentStreak }
 
     // Gamification XP: +50 per completed task, +1 per min focus, +10 per habit streak
-    val taskXp = tasks.filter { it.task.isCompleted }.sumOf { it.task.xpValue.coerceAtLeast(50) }
+    val taskXp = tasks.filter {
+        it.task.isCompleted &&
+        it.task.status != TaskStatus.FAILED_LOGGED
+    }.sumOf { it.task.xpValue.coerceAtLeast(50) }
     val totalXp = taskXp + totalMinutesLogged + (activeHabitStreaks * 10)
     val currentLevel = (totalXp / 100) + 1
     val currentLevelXp = totalXp % 100
@@ -259,7 +266,10 @@ fun LunaAnalyticsView(
                         val dayEnd = dayStart + (24 * 60 * 60 * 1000L) - 1L
                         val dayLabel = SimpleDateFormat("EEE", Locale.getDefault()).format(cal.time)
                         val count = tasks.count {
-                            it.task.isCompleted && it.task.completedAt != null && it.task.completedAt in dayStart..dayEnd
+                            it.task.isCompleted &&
+                            it.task.status != TaskStatus.FAILED_LOGGED &&
+                            it.task.completedAt != null &&
+                            it.task.completedAt in dayStart..dayEnd
                         }
                         Pair(dayLabel, count)
                     }

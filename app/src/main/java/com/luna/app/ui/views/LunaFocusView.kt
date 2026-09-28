@@ -145,8 +145,10 @@ fun LunaFocusView(
         }
     }
 
-    // Timer Ticker & Foreground Notification Sync
-    LaunchedEffect(isRunning, remainingSeconds) {
+    var completedWorkCount by remember { mutableIntStateOf(0) }
+
+    // Timer Ticker & Foreground Notification Sync (decoupled from 1s LaunchedEffect retriggers)
+    LaunchedEffect(isRunning) {
         if (isRunning) {
             FocusTimerService.startService(
                 context = context,
@@ -156,27 +158,43 @@ fun LunaFocusView(
                 taskTitle = currentTask?.task?.title ?: "Focus Session",
                 isRunning = true
             )
-        }
 
-        if (isRunning && remainingSeconds > 0) {
-            delay(1000L)
-            remainingSeconds -= 1
-        } else if (isRunning && remainingSeconds == 0) {
-            // Countdown reached 0: trigger alarm, log focus minutes, and prep next cycle
-            isRunning = false
-            isAlarmActive = true
-
-            FocusTimerService.stopService(context)
-
-            if (currentMode == PomodoroMode.WORK && currentTask != null) {
-                val loggedMinutes = (workDurationSeconds / 60).coerceAtLeast(1)
-                onLogTaskMinutes(currentTask.task.id, loggedMinutes)
+            while (isRunning && remainingSeconds > 0) {
+                delay(1000L)
+                remainingSeconds -= 1
+                // Periodic update to notification every 5 seconds or upon completion
+                if (remainingSeconds % 5 == 0 || remainingSeconds == 0) {
+                    FocusTimerService.startService(
+                        context = context,
+                        remainingSec = remainingSeconds,
+                        totalSec = getModeSeconds(currentMode),
+                        modeName = currentMode.label,
+                        taskTitle = currentTask?.task?.title ?: "Focus Session",
+                        isRunning = true
+                    )
+                }
             }
 
-            // Advance mode for subsequent session
-            currentMode = if (currentMode == PomodoroMode.WORK) PomodoroMode.SHORT_BREAK else PomodoroMode.WORK
-            remainingSeconds = getModeSeconds(currentMode)
-        } else if (!isRunning) {
+            if (remainingSeconds == 0) {
+                // Countdown reached 0: trigger alarm, log focus minutes, and prep next cycle
+                isRunning = false
+                isAlarmActive = true
+
+                FocusTimerService.stopService(context)
+
+                if (currentMode == PomodoroMode.WORK) {
+                    if (currentTask != null) {
+                        val loggedMinutes = (workDurationSeconds / 60).coerceAtLeast(1)
+                        onLogTaskMinutes(currentTask.task.id, loggedMinutes)
+                    }
+                    completedWorkCount += 1
+                    currentMode = if (completedWorkCount % 4 == 0) PomodoroMode.LONG_BREAK else PomodoroMode.SHORT_BREAK
+                } else {
+                    currentMode = PomodoroMode.WORK
+                }
+                remainingSeconds = getModeSeconds(currentMode)
+            }
+        } else {
             FocusTimerService.stopService(context)
         }
     }
@@ -458,7 +476,12 @@ fun LunaFocusView(
                     .clickable {
                         haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         isRunning = false
-                        currentMode = if (currentMode == PomodoroMode.WORK) PomodoroMode.SHORT_BREAK else PomodoroMode.WORK
+                        if (currentMode == PomodoroMode.WORK) {
+                            completedWorkCount += 1
+                            currentMode = if (completedWorkCount % 4 == 0) PomodoroMode.LONG_BREAK else PomodoroMode.SHORT_BREAK
+                        } else {
+                            currentMode = PomodoroMode.WORK
+                        }
                         remainingSeconds = getModeSeconds(currentMode)
                     },
                 contentAlignment = Alignment.Center

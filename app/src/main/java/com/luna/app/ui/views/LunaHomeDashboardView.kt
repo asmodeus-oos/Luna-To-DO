@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.TaskStatus
@@ -100,6 +101,7 @@ fun LunaHomeDashboardView(
     showCoverBannerText: Boolean = true,
     onSetUserCoverPath: (String) -> Unit = {},
     onSetCoverTitle: (String) -> Unit = {},
+    habits: List<HabitEntity> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val palette = LunaTheme.colors
@@ -242,10 +244,24 @@ fun LunaHomeDashboardView(
                         tint = palette.textPrimary,
                         modifier = Modifier.size(18.dp)
                     )
+                    // Dynamic streak: highest active habit streak, or task completion activity
+                    val habitStreak = habits.maxOfOrNull { it.currentStreak } ?: 0
+                    val dynamicStreak = if (habitStreak > 0) habitStreak else {
+                        val completedDates = tasks.filter {
+                            it.task.isCompleted &&
+                            it.task.status != TaskStatus.FAILED_LOGGED &&
+                            it.task.completedAt != null
+                        }.map {
+                            val cal = java.util.Calendar.getInstance().apply { timeInMillis = it.task.completedAt!! }
+                            "${cal.get(java.util.Calendar.YEAR)}-${cal.get(java.util.Calendar.DAY_OF_YEAR)}"
+                        }.toSet()
+                        if (completedDates.isNotEmpty()) 1 else 0
+                    }
+
                     Spacer(modifier = Modifier.width(4.dp))
                     Column {
                         Text(
-                            text = "5 Days",
+                            text = "$dynamicStreak ${if (dynamicStreak == 1) "Day" else "Days"}",
                             color = palette.textPrimary,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold
@@ -258,8 +274,11 @@ fun LunaHomeDashboardView(
                     }
                 }
 
-                // XP Progress (Dynamic 50 XP per completed task)
-                val completedTaskXp = tasks.filter { it.task.isCompleted }.sumOf { it.task.xpValue.coerceAtLeast(50) }
+                // XP Progress (Dynamic 50 XP per completed task, excluding abandoned/failed tasks)
+                val completedTaskXp = tasks.filter {
+                    it.task.isCompleted &&
+                    it.task.status != TaskStatus.FAILED_LOGGED
+                }.sumOf { it.task.xpValue.coerceAtLeast(50) }
                 val dynamicLevel = (completedTaskXp / 100) + 1
                 val dynamicLevelProgress = (completedTaskXp % 100) / 100f
                 val levelDescriptor = when {

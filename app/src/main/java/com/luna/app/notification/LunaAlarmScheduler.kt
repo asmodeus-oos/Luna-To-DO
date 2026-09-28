@@ -19,7 +19,8 @@ class LunaAlarmScheduler(private val context: Context) {
         if (task.isCompleted) return
 
         val startTime = task.startDate ?: task.dueDate ?: return
-        val hasStartAlarm = task.alarmOnStart || startTime > System.currentTimeMillis()
+        val isWeekly = task.weeklyDay != null
+        val hasStartAlarm = if (isWeekly) task.alarmOnStart else (task.alarmOnStart || startTime > System.currentTimeMillis())
         val hasFinishAlarm = task.alarmOnFinish
 
         val sessionType = if (task.tags.any { it.equals("Clinic", ignoreCase = true) } || task.title.contains("Clinic", ignoreCase = true)) "Clinic" else "Lecture"
@@ -39,6 +40,8 @@ class LunaAlarmScheduler(private val context: Context) {
                 group = group,
                 weeklyDay = task.weeklyDay
             )
+        } else if (!hasStartAlarm) {
+            cancelSingleAlarm((task.id * 10).toInt())
         }
 
         // 2. Finish Alarm
@@ -59,7 +62,22 @@ class LunaAlarmScheduler(private val context: Context) {
                     weeklyDay = task.weeklyDay
                 )
             }
+        } else if (!hasFinishAlarm) {
+            cancelSingleAlarm((task.id * 10 + 1).toInt())
         }
+    }
+
+    private fun cancelSingleAlarm(requestCode: Int) {
+        try {
+            val intent = Intent(context, TaskAlarmReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.cancel(pendingIntent)
+        } catch (_: Exception) {}
     }
 
     fun scheduleNextWeekAlarm(task: TaskEntity, alarmType: String) {

@@ -154,9 +154,8 @@ class TaskViewModel(
     private suspend fun checkOverdueTasks() {
         try {
             val now = System.currentTimeMillis()
-            val currentTasks = repository.getTasksWithDetailsFlow().first()
-            for (item in currentTasks) {
-                val t = item.task
+            val currentTasks = uiState.value.rawTasks
+            for (t in currentTasks) {
                 if (!t.isCompleted && t.status == TaskStatus.IN_PROGRESS && t.effectiveDeadlineEpoch != null) {
                     if (now >= t.effectiveDeadlineEpoch!!) {
                         repository.setTaskStatus(t.id, TaskStatus.OVERDUE_PENDING_REASON)
@@ -450,6 +449,24 @@ class TaskViewModel(
 
     fun testTimetableAlarm(isStart: Boolean) {
         alarmScheduler?.scheduleTestAlarm(isStart = isStart, delaySeconds = 10)
+    }
+
+    fun toggleTimetableAlarms(task: TaskEntity, enableStart: Boolean, enableFinish: Boolean) {
+        viewModelScope.launch {
+            val updated = task.copy(
+                alarmOnStart = enableStart,
+                alarmOnFinish = enableFinish
+            )
+            repository.updateTask(updated)
+            alarmScheduler?.scheduleTaskAlarms(updated)
+            if (uiState.value.isSoundEnabled) {
+                if (enableStart || enableFinish) {
+                    soundPlayer.playAdd()
+                } else {
+                    soundPlayer.playUncheck()
+                }
+            }
+        }
     }
 
     fun completeOnboarding(name: String, coverTitle: String, gender: String, themeMode: AppThemeMode) {

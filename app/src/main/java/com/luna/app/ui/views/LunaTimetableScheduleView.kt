@@ -33,6 +33,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -60,10 +62,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luna.app.data.local.DentalTimetableSeeder
 import com.luna.app.data.local.TimetableSession
+import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.domain.model.Priority
 import com.luna.app.ui.icons.UntitledIcons
 import com.luna.app.ui.theme.LunaTheme
+import java.util.Calendar
 
 enum class TimetableDayTab(val code: String, val label: String, val shortName: String) {
     ALL("ALL", "All Days", "All"),
@@ -109,6 +113,7 @@ fun LunaTimetableScheduleView(
     onTaskClick: (TaskWithDetails) -> Unit,
     onSeedTimetable: () -> Unit,
     onTestAlarm: (isStart: Boolean) -> Unit,
+    onToggleAlarms: (TaskEntity, Boolean, Boolean) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val palette = LunaTheme.colors
@@ -202,8 +207,22 @@ fun LunaTimetableScheduleView(
                             )
                         }
 
+                        val dynamicAcademicTerm = remember {
+                            val cal = Calendar.getInstance()
+                            val year = cal.get(Calendar.YEAR)
+                            val month = cal.get(Calendar.MONTH) + 1
+                            val term = when (month) {
+                                in 9..12 -> "Fall $year–${year + 1}"
+                                1 -> "Fall ${year - 1}–$year"
+                                in 2..5 -> "Spring ${year - 1}–$year"
+                                else -> "Summer $year"
+                            }
+                            val week = cal.get(Calendar.WEEK_OF_YEAR)
+                            "$term · Week $week"
+                        }
+
                         Text(
-                            text = "Fall 2026-2027 · Week 7",
+                            text = dynamicAcademicTerm,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Medium,
                             color = palette.textSecondary
@@ -471,7 +490,8 @@ fun LunaTimetableScheduleView(
             },
             onTestAlarm = { isStart ->
                 onTestAlarm(isStart)
-            }
+            },
+            onToggleAlarms = onToggleAlarms
         )
     }
 }
@@ -736,6 +756,17 @@ private fun LectureSessionCard(
             )
 
             // Footer: Alarms & Status
+            val matchingTask = model.taskWithDetails?.task
+            val startArmed = matchingTask?.alarmOnStart == true
+            val finishArmed = matchingTask?.alarmOnFinish == true
+            val (alarmIcon, alarmStatusText, alarmColor) = when {
+                matchingTask == null -> Triple("⚠️", "Not Synced (Tap Sync)", palette.textTertiary)
+                startArmed && finishArmed -> Triple("🔔", "Start (${String.format("%02d:00", model.session.startHour)}) & End (${String.format("%02d:00", endHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                startArmed -> Triple("🔔", "Start (${String.format("%02d:00", model.session.startHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                finishArmed -> Triple("🏁", "End (${String.format("%02d:00", endHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                else -> Triple("🔕", "Alarms Off", palette.textTertiary)
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -745,11 +776,11 @@ private fun LectureSessionCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = "🔔", fontSize = 11.sp)
+                    Text(text = alarmIcon, fontSize = 11.sp)
                     Text(
-                        text = "Start (${String.format("%02d:00", model.session.startHour)}) & End (${String.format("%02d:00", endHour)}) Alarms Active",
+                        text = alarmStatusText,
                         fontSize = 10.sp,
-                        color = if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80),
+                        color = alarmColor,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -921,6 +952,17 @@ private fun ClinicSessionCard(
             )
 
             // Footer: P1 Priority Badge & Dual Alarms Active
+            val matchingTask = model.taskWithDetails?.task
+            val startArmed = matchingTask?.alarmOnStart == true
+            val finishArmed = matchingTask?.alarmOnFinish == true
+            val (clinicAlarmIcon, clinicAlarmStatusText, clinicAlarmColor) = when {
+                matchingTask == null -> Triple("⚠️", "Not Synced", palette.textTertiary)
+                startArmed && finishArmed -> Triple("🔔", "Start (${String.format("%02d:00", model.session.startHour)}) & End (${String.format("%02d:00", endHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                startArmed -> Triple("🔔", "Start (${String.format("%02d:00", model.session.startHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                finishArmed -> Triple("🏁", "End (${String.format("%02d:00", endHour)}) Armed", if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80))
+                else -> Triple("🔕", "Alarms Off", palette.textTertiary)
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -930,11 +972,11 @@ private fun ClinicSessionCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(text = "🔔", fontSize = 11.sp)
+                    Text(text = clinicAlarmIcon, fontSize = 11.sp)
                     Text(
-                        text = "Start (${String.format("%02d:00", model.session.startHour)}) & End (${String.format("%02d:00", endHour)}) Alarms Active",
+                        text = clinicAlarmStatusText,
                         fontSize = 10.sp,
-                        color = if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80),
+                        color = clinicAlarmColor,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -967,12 +1009,16 @@ private fun TimetableSessionDetailSheet(
     model: TimetableSessionUiModel,
     onDismiss: () -> Unit,
     onOpenFullTask: () -> Unit,
-    onTestAlarm: (isStart: Boolean) -> Unit
+    onTestAlarm: (isStart: Boolean) -> Unit,
+    onToggleAlarms: (TaskEntity, Boolean, Boolean) -> Unit = { _, _, _ -> }
 ) {
     val palette = LunaTheme.colors
     val isLight = palette.background.red > 0.5f
     val courseColor = Color(android.graphics.Color.parseColor(model.courseMeta.colorHex))
     val endHour = model.session.startHour + model.session.durationHours
+    val matchingTask = model.taskWithDetails?.task
+    val startAlarmArmed = matchingTask?.alarmOnStart == true
+    val finishAlarmArmed = matchingTask?.alarmOnFinish == true
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1058,6 +1104,92 @@ private fun TimetableSessionDetailSheet(
                 color = palette.textPrimary
             )
 
+            // Interactive Alarm Controls (Live switches for Start and Finish Alarms)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (isLight) Color(0xFFF1F5F9) else Color(0x22FFFFFF))
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "LIVE ALARM CONTROLS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.textSecondary,
+                    letterSpacing = 0.5.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "🔔 Start Alarm (${String.format("%02d:00", model.session.startHour)})",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = if (startAlarmArmed) "Alarm armed for session start" else "Alarm disabled",
+                            fontSize = 11.sp,
+                            color = if (startAlarmArmed) (if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80)) else palette.textTertiary
+                        )
+                    }
+                    Switch(
+                        checked = startAlarmArmed,
+                        onCheckedChange = { checked ->
+                            matchingTask?.let { task ->
+                                onToggleAlarms(task, checked, task.alarmOnFinish)
+                            }
+                        },
+                        enabled = matchingTask != null,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = palette.accent,
+                            checkedTrackColor = palette.accent.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+
+                HorizontalDivider(thickness = 0.5.dp, color = palette.borderSubtle.copy(alpha = 0.3f))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "🏁 Finish Alarm (${String.format("%02d:00", endHour)})",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = if (finishAlarmArmed) "Alarm armed for session conclusion" else "Alarm disabled",
+                            fontSize = 11.sp,
+                            color = if (finishAlarmArmed) (if (isLight) Color(0xFF16A34A) else Color(0xFF4ADE80)) else palette.textTertiary
+                        )
+                    }
+                    Switch(
+                        checked = finishAlarmArmed,
+                        onCheckedChange = { checked ->
+                            matchingTask?.let { task ->
+                                onToggleAlarms(task, task.alarmOnStart, checked)
+                            }
+                        },
+                        enabled = matchingTask != null,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = palette.accent,
+                            checkedTrackColor = palette.accent.copy(alpha = 0.5f)
+                        )
+                    )
+                }
+            }
+
             // Detailed Specifications Grid
             Column(
                 modifier = Modifier
@@ -1074,8 +1206,8 @@ private fun TimetableSessionDetailSheet(
                 DetailRow(label = "Instructor", value = model.session.instructor)
                 DetailRow(label = "Department", value = model.courseMeta.department)
                 DetailRow(label = "Priority Level", value = if (model.session.priority == Priority.P1) "P1 (Urgent Clinical Attendance)" else "P2 (Standard Academic Session)")
-                DetailRow(label = "Start Alarm", value = "🔔 Armed for ${String.format("%02d:00", model.session.startHour)}")
-                DetailRow(label = "Finish Alarm", value = "🏁 Armed for ${String.format("%02d:00", endHour)}")
+                DetailRow(label = "Start Alarm", value = if (startAlarmArmed) "🔔 Armed for ${String.format("%02d:00", model.session.startHour)}" else "🔕 Disabled")
+                DetailRow(label = "Finish Alarm", value = if (finishAlarmArmed) "🏁 Armed for ${String.format("%02d:00", endHour)}" else "🔕 Disabled")
             }
 
             // Action Buttons

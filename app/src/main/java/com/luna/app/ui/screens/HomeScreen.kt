@@ -115,9 +115,40 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
     var isSearchPageOpen by remember { mutableStateOf(false) }
 
-    // Intercept back gesture when search overlay is active
-    BackHandler(enabled = isSearchPageOpen) {
-        isSearchPageOpen = false
+    // Comprehensive native BackHandler navigation hierarchy
+    val hasBackOverride = isSearchPageOpen ||
+            uiState.isSelectionMode ||
+            uiState.isSettingsOpen ||
+            uiState.isCreateSheetOpen ||
+            uiState.editingTask != null ||
+            uiState.isTemplatesSheetOpen ||
+            (pagerState.currentPage == LunaNavTab.TASKS.ordinal && uiState.selectedViewMode != AppViewMode.LIST) ||
+            pagerState.currentPage != LunaNavTab.HOME.ordinal
+
+    BackHandler(enabled = hasBackOverride) {
+        when {
+            isSearchPageOpen -> isSearchPageOpen = false
+            uiState.isSelectionMode -> viewModel.clearSelection()
+            uiState.isSettingsOpen -> viewModel.closeSettings()
+            uiState.isCreateSheetOpen -> viewModel.closeCreateSheet()
+            uiState.editingTask != null -> viewModel.closeTaskDetail()
+            uiState.isTemplatesSheetOpen -> viewModel.closeTemplatesSheet()
+            pagerState.currentPage == LunaNavTab.TASKS.ordinal && uiState.selectedViewMode != AppViewMode.LIST -> {
+                viewModel.selectViewMode(AppViewMode.LIST)
+            }
+            pagerState.currentPage != LunaNavTab.HOME.ordinal -> {
+                coroutineScope.launch {
+                    pagerState.animateScrollToPage(LunaNavTab.HOME.ordinal)
+                }
+            }
+        }
+    }
+
+    // Deep-link intent synchronization: scroll pager to Tasks tab when Timetable mode is selected
+    LaunchedEffect(uiState.selectedViewMode) {
+        if (uiState.selectedViewMode == AppViewMode.TIMETABLE && pagerState.currentPage != LunaNavTab.TASKS.ordinal) {
+            pagerState.animateScrollToPage(LunaNavTab.TASKS.ordinal)
+        }
     }
 
     LaunchedEffect(uiState.tasks) {
@@ -209,7 +240,8 @@ fun HomeScreen(
                             coverTitle = uiState.coverTitle,
                             showCoverBannerText = uiState.showCoverBannerText,
                             onSetUserCoverPath = { viewModel.setUserCoverPath(it) },
-                            onSetCoverTitle = { viewModel.setCoverTitle(it) }
+                            onSetCoverTitle = { viewModel.setCoverTitle(it) },
+                            habits = uiState.habits
                         )
                     }
                     LunaNavTab.TASKS -> {
@@ -425,7 +457,10 @@ fun HomeScreen(
                                         tasks = uiState.allTasks,
                                         onTaskClick = { viewModel.openTaskDetail(it) },
                                         onSeedTimetable = { viewModel.injectDentalTimetable(overwrite = true) },
-                                        onTestAlarm = { isStart -> viewModel.testTimetableAlarm(isStart) }
+                                        onTestAlarm = { isStart -> viewModel.testTimetableAlarm(isStart) },
+                                        onToggleAlarms = { task, enableStart, enableFinish ->
+                                            viewModel.toggleTimetableAlarms(task, enableStart, enableFinish)
+                                        }
                                     )
                                 }
                                 AppViewMode.CALENDAR -> {
