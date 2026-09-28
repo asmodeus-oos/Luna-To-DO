@@ -52,7 +52,6 @@ enum class LunaNavTab {
     HOME,
     TASKS,
     WEALTH,
-    TIMERS,
     STATS
 }
 
@@ -133,11 +132,10 @@ fun LunaLiquidGlassNavBar(
         ) {
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
                 val totalWidth = maxWidth
-                val tabCount = 5
+                val tabCount = 4
                 val isHomeSelected = selectedTab == LunaNavTab.HOME
                 val isTasksSelected = selectedTab == LunaNavTab.TASKS
                 val isWealthSelected = selectedTab == LunaNavTab.WEALTH
-                val isTimersSelected = selectedTab == LunaNavTab.TIMERS
                 val isStatsSelected = selectedTab == LunaNavTab.STATS
 
                 val animatedIndex by animateFloatAsState(
@@ -207,7 +205,7 @@ fun LunaLiquidGlassNavBar(
                         )
                 )
 
-                // 5 Interactive Navigation Tabs
+                // 4 Interactive Navigation Tabs
                 Row(
                     modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                     verticalAlignment = Alignment.CenterVertically
@@ -245,18 +243,6 @@ fun LunaLiquidGlassNavBar(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.WEALTH)
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                    NavBarTabItem(
-                        icon = UntitledIcons.StopwatchTab,
-                        label = "Time",
-                        showLabel = showTabLabels,
-                        isSelected = isTimersSelected,
-                        isLight = isLight,
-                        onClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                            onTabSelected(LunaNavTab.TIMERS)
                         },
                         modifier = Modifier.weight(1f)
                     )

@@ -474,6 +474,17 @@ fun HomeScreen(
                                         onTaskClick = { viewModel.openTaskDetail(it) }
                                     )
                                 }
+                                AppViewMode.TIME -> {
+                                    LunaFocusView(
+                                        tasks = uiState.allTasks,
+                                        onLogTaskMinutes = { id, mins -> viewModel.logTaskMinutes(id, mins) },
+                                        onCompleteTask = { id -> viewModel.completeTask(id) },
+                                        workDurationSeconds = uiState.focusWorkSeconds,
+                                        shortBreakDurationSeconds = uiState.shortBreakSeconds,
+                                        longBreakDurationSeconds = uiState.longBreakSeconds,
+                                        onUpdateDurations = { w, s, l -> viewModel.setFocusDurations(w, s, l) }
+                                    )
+                                }
                                 AppViewMode.HABITS -> {
                                     LunaHabitsView(
                                         habits = uiState.habits,
@@ -552,17 +563,6 @@ fun HomeScreen(
                                 )
                             },
                             onDeleteFinancialGoal = { viewModel.deleteFinancialGoal(it) }
-                        )
-                    }
-                    LunaNavTab.TIMERS -> {
-                        LunaFocusView(
-                            tasks = uiState.allTasks,
-                            onLogTaskMinutes = { id, mins -> viewModel.logTaskMinutes(id, mins) },
-                            onCompleteTask = { id -> viewModel.completeTask(id) },
-                            workDurationSeconds = uiState.focusWorkSeconds,
-                            shortBreakDurationSeconds = uiState.shortBreakSeconds,
-                            longBreakDurationSeconds = uiState.longBreakSeconds,
-                            onUpdateDurations = { w, s, l -> viewModel.setFocusDurations(w, s, l) }
                         )
                     }
                     LunaNavTab.STATS -> {
