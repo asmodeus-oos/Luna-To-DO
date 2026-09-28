@@ -60,7 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.luna.app.data.local.DentalTimetableSeeder
+import com.luna.app.data.local.CourseMeta
 import com.luna.app.data.local.TimetableSession
 import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.model.TaskWithDetails
@@ -73,7 +73,26 @@ enum class TimetableDayTab(val code: String, val label: String, val shortName: S
     ALL("ALL", "All Days", "All"),
     MON("MON", "Monday", "Mon"),
     TUE("TUE", "Tuesday", "Tue"),
-    WED("WED", "Wednesday", "Wed")
+    WED("WED", "Wednesday", "Wed"),
+    THU("THU", "Thursday", "Thu"),
+    FRI("FRI", "Friday", "Fri"),
+    SAT("SAT", "Saturday", "Sat"),
+    SUN("SUN", "Sunday", "Sun")
+}
+
+private fun normalizeDayOfWeek(day: String?): String? {
+    if (day == null) return null
+    val upper = day.trim().uppercase()
+    return when {
+        upper.startsWith("MON") -> "MON"
+        upper.startsWith("TUE") -> "TUE"
+        upper.startsWith("WED") -> "WED"
+        upper.startsWith("THU") -> "THU"
+        upper.startsWith("FRI") -> "FRI"
+        upper.startsWith("SAT") -> "SAT"
+        upper.startsWith("SUN") -> "SUN"
+        else -> null
+    }
 }
 
 /**
@@ -111,7 +130,7 @@ fun Modifier.dashedBorder(
 fun LunaTimetableScheduleView(
     tasks: List<TaskWithDetails>,
     onTaskClick: (TaskWithDetails) -> Unit,
-    onSeedTimetable: () -> Unit,
+    onSeedTimetable: () -> Unit = {},
     onTestAlarm: (isStart: Boolean) -> Unit,
     onToggleAlarms: (TaskEntity, Boolean, Boolean) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
@@ -124,23 +143,79 @@ fun LunaTimetableScheduleView(
     var selectedSessionForModal by remember { mutableStateOf<TimetableSessionUiModel?>(null) }
     var showCoursesLegend by remember { mutableStateOf(false) }
 
-    // Map tasks and fallback to DentalTimetableSeeder static definitions
-    val dentalTasks = tasks.filter {
-        it.task.weeklyDay != null ||
-                it.task.category.equals("Dentistry", ignoreCase = true) ||
-                it.task.tags.contains("Dentistry")
-    }
-
     val sessionUiModels = remember(tasks) {
-        DentalTimetableSeeder.SESSIONS.map { staticSession ->
-            val matchingTask = dentalTasks.firstOrNull {
-                it.task.title.equals(staticSession.title, ignoreCase = true) &&
-                        it.task.weeklyDay == staticSession.dayOfWeekName
+        val timetableTasks = tasks.filter { it.task.weeklyDay != null }
+        timetableTasks.mapNotNull { taskWithDetails ->
+            val task = taskWithDetails.task
+            val normDay = normalizeDayOfWeek(task.weeklyDay) ?: return@mapNotNull null
+
+            val timeStr = task.weeklyTime ?: task.dueTime ?: "09:00"
+            val parts = timeStr.trim().split(":")
+            val hour = parts.getOrNull(0)?.filter { it.isDigit() }?.toIntOrNull() ?: 9
+            val minute = parts.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull() ?: 0
+
+            val durationHours = when (task.durationUnit.uppercase()) {
+                "MINUTES" -> ((task.durationValue + 59) / 60).coerceAtLeast(1)
+                "DAYS" -> (task.durationValue * 24).coerceAtLeast(1)
+                else -> if (task.durationValue > 0) task.durationValue else 1
             }
+
+            val sessionType = when {
+                task.tags.any { it.contains("clinic", ignoreCase = true) || it.contains("lab", ignoreCase = true) } -> "Clinic"
+                task.tags.any { it.contains("lecture", ignoreCase = true) || it.contains("class", ignoreCase = true) } -> "Lecture"
+                task.category.isNotBlank() && !task.category.equals("General", ignoreCase = true) -> task.category
+                else -> "Lecture"
+            }
+
+            val courseCode = task.tags.firstOrNull { it.length in 3..8 && it.any { c -> c.isDigit() } }
+                ?: if (task.category.isNotBlank() && !task.category.equals("General", ignoreCase = true)) task.category.take(6).uppercase() else "TASK"
+
+            val session = TimetableSession(
+                title = task.title,
+                courseCode = courseCode,
+                type = sessionType,
+                dayOfWeekName = normDay,
+                calendarDayOfWeek = when (normDay) {
+                    "MON" -> Calendar.MONDAY
+                    "TUE" -> Calendar.TUESDAY
+                    "WED" -> Calendar.WEDNESDAY
+                    "THU" -> Calendar.THURSDAY
+                    "FRI" -> Calendar.FRIDAY
+                    "SAT" -> Calendar.SATURDAY
+                    "SUN" -> Calendar.SUNDAY
+                    else -> Calendar.MONDAY
+                },
+                startHour = hour,
+                startMinute = minute,
+                durationHours = durationHours,
+                place = task.place ?: "Room / TBD",
+                group = task.sectionName ?: "Cohort",
+                instructor = task.assignee ?: "Instructor",
+                priority = task.priority,
+                extraTags = task.tags
+            )
+
+            val hash = Math.abs((task.title + courseCode).hashCode())
+            val colorList = listOf(
+                "#6366F1", "#06B6D4", "#F43F5E", "#3B82F6",
+                "#EC4899", "#F97316", "#10B981", "#8B5CF6", "#14B8A6"
+            )
+            val colorHex = colorList[hash % colorList.size]
+
+            val courseMeta = CourseMeta(
+                code = courseCode,
+                name = task.title,
+                colorHex = colorHex,
+                darkBgHex = "#1E1B4B",
+                lightBgHex = "#EEF2FF",
+                department = task.category.ifEmpty { "General" },
+                creditHours = "${durationHours}h"
+            )
+
             TimetableSessionUiModel(
-                session = staticSession,
-                taskWithDetails = matchingTask,
-                courseMeta = DentalTimetableSeeder.getCourseMeta(staticSession.courseCode)
+                session = session,
+                taskWithDetails = taskWithDetails,
+                courseMeta = courseMeta
             )
         }
     }
@@ -156,6 +231,9 @@ fun LunaTimetableScheduleView(
     val totalHours = sessionUiModels.sumOf { it.session.durationHours }
     val lectureCount = sessionUiModels.count { it.session.type == "Lecture" }
     val clinicCount = sessionUiModels.count { it.session.type == "Clinic" }
+    val distinctCourses = remember(sessionUiModels) {
+        sessionUiModels.map { it.courseMeta }.distinctBy { it.code }
+    }
 
     LazyColumn(
         modifier = modifier
@@ -199,7 +277,7 @@ fun LunaTimetableScheduleView(
                                 .padding(horizontal = 10.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = "FACULTY OF DENTISTRY · LEVEL 4",
+                                text = "WEEKLY SCHEDULE · TIMETABLE",
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isLight) Color(0xFF4338CA) else Color(0xFFA5B4FC),
@@ -237,7 +315,7 @@ fun LunaTimetableScheduleView(
                     )
 
                     Text(
-                        text = "Synchronized schedule with differentiated Lectures & Clinics, live room assignments, and automatic start/finish alarms.",
+                        text = "Synchronized weekly schedule with room assignments, task priority, and automatic start/finish alarms.",
                         fontSize = 12.sp,
                         lineHeight = 16.sp,
                         color = palette.textSecondary
@@ -269,8 +347,8 @@ fun LunaTimetableScheduleView(
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            label = "Clinics",
-                            value = "$clinicCount",
+                            label = "Clinics / Other",
+                            value = "${sessionUiModels.size - lectureCount}",
                             icon = "🦷",
                             modifier = Modifier.weight(1f)
                         )
@@ -279,7 +357,7 @@ fun LunaTimetableScheduleView(
             }
         }
 
-        // --- 2. Action Toolbar: Test Alarms & Sync ---
+        // --- 2. Action Toolbar: Test Alarms & Legend ---
         item(key = "timetable_actions") {
             Row(
                 modifier = Modifier
@@ -308,30 +386,21 @@ fun LunaTimetableScheduleView(
                     }
                 )
 
-                // Sync / Re-seed Timetable
-                ActionPill(
-                    icon = "🔄",
-                    text = "Sync Timetable",
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onSeedTimetable()
-                    }
-                )
-
-                // Show Courses Catalog
-                ActionPill(
-                    icon = if (showCoursesLegend) "✕" else "📖",
-                    text = if (showCoursesLegend) "Hide Courses" else "Course Legend",
-                    onClick = {
-                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        showCoursesLegend = !showCoursesLegend
-                    }
-                )
+                if (distinctCourses.isNotEmpty()) {
+                    ActionPill(
+                        icon = if (showCoursesLegend) "✕" else "📖",
+                        text = if (showCoursesLegend) "Hide Legend" else "Course Legend",
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            showCoursesLegend = !showCoursesLegend
+                        }
+                    )
+                }
             }
         }
 
         // --- 2.5 Optional Course Catalog Drawer ---
-        if (showCoursesLegend) {
+        if (showCoursesLegend && distinctCourses.isNotEmpty()) {
             item(key = "courses_catalog_section") {
                 Box(
                     modifier = Modifier
@@ -343,13 +412,13 @@ fun LunaTimetableScheduleView(
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            text = "Course Directory & Departments",
+                            text = "Course Directory & Categories",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = palette.textPrimary
                         )
 
-                        DentalTimetableSeeder.COURSES.forEach { course ->
+                        distinctCourses.forEach { course ->
                             val color = Color(android.graphics.Color.parseColor(course.colorHex))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -382,14 +451,15 @@ fun LunaTimetableScheduleView(
             }
         }
 
-        // --- 3. Day Tabs Selector (All, Mon, Tue, Wed) ---
+        // --- 3. Day Tabs Selector (All, Mon, Tue, Wed, Thu, Fri, Sat, Sun) ---
         item(key = "day_tabs_selector") {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(if (isLight) Color(0xFFE4E4E8) else Color(0x24FFFFFF))
-                    .padding(4.dp),
+                    .padding(4.dp)
+                    .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 TimetableDayTab.entries.forEach { tab ->
@@ -409,14 +479,13 @@ fun LunaTimetableScheduleView(
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
                             .background(bgColor)
                             .clickable {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                 selectedDayTab = tab
                             }
-                            .padding(vertical = 8.dp),
+                            .padding(horizontal = 14.dp, vertical = 8.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -437,42 +506,96 @@ fun LunaTimetableScheduleView(
             }
         }
 
-        // --- 4. Timetable Sessions List ---
-        // Group by Day
-        val daysToDisplay = if (selectedDayTab == TimetableDayTab.ALL) {
-            listOf(TimetableDayTab.MON, TimetableDayTab.TUE, TimetableDayTab.WED)
-        } else {
-            listOf(selectedDayTab)
-        }
-
-        daysToDisplay.forEach { dayTab ->
-            val daySessions = sessionUiModels.filter { it.session.dayOfWeekName == dayTab.code }
-                .sortedBy { it.session.startHour * 60 + it.session.startMinute }
-            if (daySessions.isNotEmpty()) {
-                item(key = "header_${dayTab.code}") {
-                    DaySectionHeader(dayTab = dayTab, sessions = daySessions)
+        // --- 4. Timetable Sessions List or Empty State ---
+        if (sessionUiModels.isEmpty()) {
+            item(key = "empty_timetable_schedule") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp, horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "🗓️", fontSize = 42.sp)
+                        Text(
+                            text = "No Timetable Sessions",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = palette.textPrimary
+                        )
+                        Text(
+                            text = "Add tasks with a recurring weekday (Mon–Sun) and start time to display them on your timetable.",
+                            fontSize = 12.sp,
+                            color = palette.textSecondary,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
                 }
+            }
+        } else if (filteredSessions.isEmpty()) {
+            item(key = "empty_day_sessions") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp, horizontal = 24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "☕", fontSize = 36.sp)
+                        Text(
+                            text = "No sessions on ${selectedDayTab.label}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = palette.textPrimary
+                        )
+                    }
+                }
+            }
+        } else {
+            val daysToDisplay = if (selectedDayTab == TimetableDayTab.ALL) {
+                listOf(
+                    TimetableDayTab.MON, TimetableDayTab.TUE, TimetableDayTab.WED,
+                    TimetableDayTab.THU, TimetableDayTab.FRI, TimetableDayTab.SAT, TimetableDayTab.SUN
+                )
+            } else {
+                listOf(selectedDayTab)
+            }
 
-                items(
-                    items = daySessions,
-                    key = { "${it.session.dayOfWeekName}_${it.session.startHour}_${it.session.courseCode}_${it.session.type}" }
-                ) { itemModel ->
-                    if (itemModel.session.type == "Clinic") {
-                        ClinicSessionCard(
-                            model = itemModel,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                selectedSessionForModal = itemModel
-                            }
-                        )
-                    } else {
-                        LectureSessionCard(
-                            model = itemModel,
-                            onClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                selectedSessionForModal = itemModel
-                            }
-                        )
+            daysToDisplay.forEach { dayTab ->
+                val daySessions = sessionUiModels.filter { it.session.dayOfWeekName == dayTab.code }
+                    .sortedBy { it.session.startHour * 60 + it.session.startMinute }
+                if (daySessions.isNotEmpty()) {
+                    item(key = "header_${dayTab.code}") {
+                        DaySectionHeader(dayTab = dayTab, sessions = daySessions)
+                    }
+
+                    items(
+                        items = daySessions,
+                        key = { "${it.taskWithDetails?.task?.id ?: it.session.title}_${it.session.dayOfWeekName}_${it.session.startHour}_${it.session.startMinute}" }
+                    ) { itemModel ->
+                        if (itemModel.session.type == "Clinic") {
+                            ClinicSessionCard(
+                                model = itemModel,
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    selectedSessionForModal = itemModel
+                                }
+                            )
+                        } else {
+                            LectureSessionCard(
+                                model = itemModel,
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    selectedSessionForModal = itemModel
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -1199,13 +1322,23 @@ private fun TimetableSessionDetailSheet(
                     .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                DetailRow(label = "Day of Week", value = "${model.session.dayOfWeekName} (${when (model.session.dayOfWeekName) { "MON" -> "Monday"; "TUE" -> "Tuesday"; else -> "Wednesday" }})")
+                val dayFullLabel = when (model.session.dayOfWeekName) {
+                    "MON" -> "Monday"
+                    "TUE" -> "Tuesday"
+                    "WED" -> "Wednesday"
+                    "THU" -> "Thursday"
+                    "FRI" -> "Friday"
+                    "SAT" -> "Saturday"
+                    "SUN" -> "Sunday"
+                    else -> model.session.dayOfWeekName
+                }
+                DetailRow(label = "Day of Week", value = "${model.session.dayOfWeekName} ($dayFullLabel)")
                 DetailRow(label = "Time Slot", value = "${String.format("%02d:00", model.session.startHour)} – ${String.format("%02d:00", endHour)} (${model.session.durationHours} hr${if (model.session.durationHours > 1) "s" else ""})")
                 DetailRow(label = "Room / Hall", value = model.session.place)
                 DetailRow(label = "Cohort / Group", value = model.session.group)
                 DetailRow(label = "Instructor", value = model.session.instructor)
-                DetailRow(label = "Department", value = model.courseMeta.department)
-                DetailRow(label = "Priority Level", value = if (model.session.priority == Priority.P1) "P1 (Urgent Clinical Attendance)" else "P2 (Standard Academic Session)")
+                DetailRow(label = "Category / Dept", value = model.courseMeta.department)
+                DetailRow(label = "Priority Level", value = model.session.priority.label)
                 DetailRow(label = "Start Alarm", value = if (startAlarmArmed) "🔔 Armed for ${String.format("%02d:00", model.session.startHour)}" else "🔕 Disabled")
                 DetailRow(label = "Finish Alarm", value = if (finishAlarmArmed) "🏁 Armed for ${String.format("%02d:00", endHour)}" else "🔕 Disabled")
             }
@@ -1280,5 +1413,5 @@ private fun DetailRow(label: String, value: String) {
 data class TimetableSessionUiModel(
     val session: TimetableSession,
     val taskWithDetails: TaskWithDetails?,
-    val courseMeta: DentalTimetableSeeder.DentalCourseMeta
+    val courseMeta: CourseMeta
 )

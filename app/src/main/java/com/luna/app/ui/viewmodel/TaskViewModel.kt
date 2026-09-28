@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.luna.app.audio.TactileSoundPlayer
-import com.luna.app.data.local.DentalTimetableSeeder
 import com.luna.app.data.local.entity.AccountEntity
 import com.luna.app.data.local.entity.BudgetEntity
 import com.luna.app.data.local.entity.FinancialGoalEntity
@@ -495,15 +494,6 @@ class TaskViewModel(
         }
     }
 
-    fun injectDentalTimetable(overwrite: Boolean = false, onComplete: ((Int) -> Unit)? = null) {
-        viewModelScope.launch {
-            val inserted = DentalTimetableSeeder.seed(repository, alarmScheduler = alarmScheduler, overwrite = overwrite)
-            if (inserted > 0 && uiState.value.isSoundEnabled) {
-                soundPlayer.playAdd()
-            }
-            onComplete?.invoke(inserted)
-        }
-    }
 
     fun testTimetableAlarm(isStart: Boolean) {
         alarmScheduler?.scheduleTestAlarm(isStart = isStart, delaySeconds = 10)

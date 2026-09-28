@@ -151,9 +151,9 @@ fun LunaWealthView(
             "EXPENSES" -> tx.type.equals("EXPENSE", ignoreCase = true)
             "INCOME" -> tx.type.equals("INCOME", ignoreCase = true)
             "THIS_MONTH" -> tx.timestamp >= startOfMonthMillis
-            "DENTISTRY" -> {
-                val dentKeys = listOf("dental", "lab", "clinic", "implant", "supplies", "patient")
-                dentKeys.any { tx.title.contains(it, ignoreCase = true) || tx.category.contains(it, ignoreCase = true) || tx.tags.any { tag -> tag.contains(it, ignoreCase = true) } }
+            "BILLS" -> {
+                val billKeys = listOf("bill", "utility", "rent", "subscription", "electric", "internet", "phone")
+                billKeys.any { tx.title.contains(it, ignoreCase = true) || tx.category.contains(it, ignoreCase = true) || tx.tags.any { tag -> tag.contains(it, ignoreCase = true) } }
             }
             "TAX" -> tx.isTaxDeductible || tx.tags.any { it.contains("tax", ignoreCase = true) }
             else -> true
@@ -610,7 +610,7 @@ fun LunaWealthView(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "+ Create your first budget (e.g. Dental Supplies $500/mo)",
+                    text = "+ Create your first budget (e.g. Groceries $500/mo)",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color(0xFF3B82F6)
@@ -840,7 +840,7 @@ fun LunaWealthView(
                 "EXPENSES" to "Expenses",
                 "INCOME" to "Income",
                 "THIS_MONTH" to "This Month",
-                "DENTISTRY" to "Dentistry / Clinic",
+                "BILLS" to "Bills & Rent",
                 "TAX" to "Tax Deductible"
             ).forEach { (filterKey, label) ->
                 val isSelected = selectedFilterChip == filterKey
@@ -1202,9 +1202,8 @@ fun LunaWealthView(
                         textStyle = TextStyle(color = palette.textPrimary, fontSize = 14.sp)
                     )
 
-                    // Quick presets
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        listOf("Dental Supplies", "Lab Fees", "Clinic Rent", "Equipment", "Groceries", "Dining").forEach { preset ->
+                        listOf("Groceries", "Rent & Utilities", "Dining", "Tech", "Shopping", "Transport").forEach { preset ->
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
@@ -1324,8 +1323,8 @@ fun LunaWealthView(
 
 /**
  * Natural language helper to parse quick entries like:
- * "$45 Dental resin #supplies"
- * "+1800 Patient procedure #implant"
+ * "$45 Groceries #supplies"
+ * "+1800 Project milestone #income"
  */
 private fun parseAndExecuteQuickTransaction(
     text: String,

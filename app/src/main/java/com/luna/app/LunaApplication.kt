@@ -46,20 +46,24 @@ class LunaApplication : Application() {
 
         LunaNotificationHelper.createNotificationChannels(this)
 
-        seedDentalTimetableAndAlarms()
+        purgePreinjectedTasks()
     }
 
-    private fun seedDentalTimetableAndAlarms() {
+    private fun purgePreinjectedTasks() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val alarmScheduler = com.luna.app.notification.LunaAlarmScheduler(this@LunaApplication)
-                com.luna.app.data.local.DentalTimetableSeeder.seed(
-                    repository = taskRepository,
-                    alarmScheduler = alarmScheduler,
-                    overwrite = false
-                )
+                val existingTasks = taskRepository.getTasksWithDetailsFlow().first()
+                val dentistryTasks = existingTasks.filter {
+                    it.task.category.equals("Dentistry", ignoreCase = true) ||
+                            it.task.tags.any { tag -> tag.equals("Dentistry", ignoreCase = true) }
+                }
+                for (taskWithDetails in dentistryTasks) {
+                    alarmScheduler.cancelTaskAlarm(taskWithDetails.task.id)
+                }
+                taskRepository.deletePreinjectedDentistryTasks()
             } catch (e: Exception) {
-                android.util.Log.e("LunaApplication", "Auto-seed timetable failed: ${e.message}")
+                android.util.Log.e("LunaApplication", "Purge preinjected tasks failed: ${e.message}")
             }
         }
     }

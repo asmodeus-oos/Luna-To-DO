@@ -104,13 +104,13 @@ fun CreateTransactionSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val expenseCategories = listOf(
-        "General", "Dental Supplies", "Lab Fees", "Clinic Rent",
-        "Equipment", "Groceries", "Dining", "Coffee",
-        "Tech", "Utilities", "Transport", "Health", "Subscriptions"
+        "General", "Groceries", "Dining", "Coffee",
+        "Shopping", "Tech", "Utilities", "Rent",
+        "Transport", "Health", "Subscriptions", "Education", "Travel"
     )
 
     val incomeCategories = listOf(
-        "General", "Patient Fee", "Salary", "Consultation",
+        "General", "Salary", "Freelance", "Consultation",
         "Investments", "Bonus", "Cashback", "Side Project"
     )
 

@@ -51,6 +51,12 @@ interface TaskDao {
     @Query("DELETE FROM tasks WHERE title = :title")
     suspend fun deleteTasksByTitle(title: String)
 
+    @Query("SELECT * FROM tasks WHERE category = 'Dentistry' OR tags LIKE '%Dentistry%'")
+    suspend fun getPreinjectedDentistryTasks(): List<TaskEntity>
+
+    @Query("DELETE FROM tasks WHERE category = 'Dentistry' OR tags LIKE '%Dentistry%'")
+    suspend fun deletePreinjectedDentistryTasks(): Int
+
     @Query("UPDATE tasks SET recurrenceRule = 'NONE' WHERE title = :title")
     suspend fun disableRecurrenceByTitle(title: String)
 

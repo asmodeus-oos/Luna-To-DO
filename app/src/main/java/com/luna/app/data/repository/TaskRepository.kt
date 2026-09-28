@@ -61,6 +61,7 @@ interface TaskRepository {
     suspend fun setTaskSection(id: Long, section: String?)
     suspend fun logTaskMinutes(id: Long, additionalMinutes: Int)
     suspend fun deleteTask(id: Long)
+    suspend fun deletePreinjectedDentistryTasks(): Int
     suspend fun disableRecurrenceByTitle(title: String)
     suspend fun duplicateTask(id: Long): Long
     suspend fun clearCompletedTasks()

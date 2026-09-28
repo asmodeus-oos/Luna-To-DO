@@ -253,6 +253,14 @@ class TaskRepositoryImpl(
         taskActivityDao.deleteActivitiesForTask(id)
     }
 
+    override suspend fun deletePreinjectedDentistryTasks(): Int {
+        val tasksToDelete = taskDao.getPreinjectedDentistryTasks()
+        for (task in tasksToDelete) {
+            deleteTask(task.id)
+        }
+        return tasksToDelete.size
+    }
+
     override suspend fun disableRecurrenceByTitle(title: String) {
         taskDao.disableRecurrenceByTitle(title)
     }

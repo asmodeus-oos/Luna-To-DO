@@ -461,7 +461,6 @@ fun HomeScreen(
                                     LunaTimetableScheduleView(
                                         tasks = uiState.allTasks,
                                         onTaskClick = { viewModel.openTaskDetail(it) },
-                                        onSeedTimetable = { viewModel.injectDentalTimetable(overwrite = true) },
                                         onTestAlarm = { isStart -> viewModel.testTimetableAlarm(isStart) },
                                         onToggleAlarms = { task, enableStart, enableFinish ->
                                             viewModel.toggleTimetableAlarms(task, enableStart, enableFinish)
@@ -894,9 +893,6 @@ fun HomeScreen(
                     },
                     onClearAllData = {
                         viewModel.clearAllData()
-                    },
-                    onImportTimetable = {
-                        viewModel.injectDentalTimetable()
                     },
                     onExportBackup = { uri ->
                         viewModel.exportBackupToUri(context, uri)
