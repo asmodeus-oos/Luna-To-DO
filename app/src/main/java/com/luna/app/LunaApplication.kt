@@ -36,7 +36,11 @@ class LunaApplication : Application() {
             goalDao = database.goalDao(),
             routineDao = database.routineDao(),
             taskActivityDao = database.taskActivityDao(),
-            missedReasonDao = database.missedReasonDao()
+            missedReasonDao = database.missedReasonDao(),
+            transactionDao = database.transactionDao(),
+            accountDao = database.accountDao(),
+            budgetDao = database.budgetDao(),
+            financialGoalDao = database.financialGoalDao()
         )
         preferencesRepository = UserPreferencesRepository(this)
 

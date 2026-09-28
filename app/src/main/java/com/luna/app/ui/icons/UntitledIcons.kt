@@ -945,6 +945,19 @@ object UntitledIcons {
         ).build()
     }
 
+    val WalletTab: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "WalletTab",
+            defaultWidth = 24.dp,
+            defaultHeight = 24.dp,
+            viewportWidth = 24f,
+            viewportHeight = 24f
+        ).addPath(
+            pathData = PathParser().parsePathString("M21 7H3C1.89543 7 1 7.89543 1 9V19C1 20.1046 1.89543 21 3 21H21C22.1046 21 23 20.1046 23 19V9C23 7.89543 22.1046 7 21 7ZM3 5H19V3H3C1.89543 3 1 3.89543 1 5V6.17C1.58 5.44 2.24 5 3 5ZM19 16C17.9 16 17 15.1 17 14C17 12.9 17.9 12 19 12C20.1 12 21 12.9 21 14C21 15.1 20.1 16 19 16Z").toNodes(),
+            fill = SolidColor(Color.Black)
+        ).build()
+    }
+
     val SlidersSettings: ImageVector by lazy {
         ImageVector.Builder(
             name = "SlidersSettings",

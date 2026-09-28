@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import com.luna.app.domain.model.AppViewMode
 import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.SmartFilter
+import com.luna.app.ui.components.CreateTransactionSheet
 import com.luna.app.ui.components.LunaBulkActionBar
 import com.luna.app.ui.components.LunaCelebrationOverlay
 import com.luna.app.ui.components.LunaCreateTaskSheet
@@ -93,6 +94,7 @@ import com.luna.app.ui.views.LunaProjectsView
 import com.luna.app.ui.views.LunaRoutinesView
 import com.luna.app.ui.views.LunaSettingsView
 import com.luna.app.ui.views.LunaTimetableScheduleView
+import com.luna.app.ui.views.LunaWealthView
 import kotlinx.coroutines.launch
 
 @Composable
@@ -120,6 +122,7 @@ fun HomeScreen(
             uiState.isSelectionMode ||
             uiState.isSettingsOpen ||
             uiState.isCreateSheetOpen ||
+            uiState.isCreateTransactionSheetOpen ||
             uiState.editingTask != null ||
             uiState.isTemplatesSheetOpen ||
             (pagerState.currentPage == LunaNavTab.TASKS.ordinal && uiState.selectedViewMode != AppViewMode.LIST) ||
@@ -131,6 +134,7 @@ fun HomeScreen(
             uiState.isSelectionMode -> viewModel.clearSelection()
             uiState.isSettingsOpen -> viewModel.closeSettings()
             uiState.isCreateSheetOpen -> viewModel.closeCreateSheet()
+            uiState.isCreateTransactionSheetOpen -> viewModel.closeCreateTransactionSheet()
             uiState.editingTask != null -> viewModel.closeTaskDetail()
             uiState.isTemplatesSheetOpen -> viewModel.closeTemplatesSheet()
             pagerState.currentPage == LunaNavTab.TASKS.ordinal && uiState.selectedViewMode != AppViewMode.LIST -> {
@@ -502,6 +506,54 @@ fun HomeScreen(
                             }
                         }
                     }
+                    LunaNavTab.WEALTH -> {
+                        LunaWealthView(
+                            transactions = uiState.transactions,
+                            accounts = uiState.accounts,
+                            budgets = uiState.budgets,
+                            financialGoals = uiState.financialGoals,
+                            onAddTransactionClick = { viewModel.openCreateTransactionSheet() },
+                            onEditTransaction = { viewModel.openCreateTransactionSheet(it) },
+                            onDeleteTransaction = { viewModel.deleteTransaction(it) },
+                            onQuickAddTransaction = { title, amount, type, tags ->
+                                viewModel.addTransaction(
+                                    title = title,
+                                    amount = amount,
+                                    type = type,
+                                    tags = tags,
+                                    accountId = uiState.accounts.firstOrNull()?.id ?: 1L
+                                )
+                            },
+                            onAddAccount = { name, type, bal, color ->
+                                viewModel.addAccount(
+                                    name = name,
+                                    accountType = type,
+                                    balance = bal,
+                                    colorHex = color
+                                )
+                            },
+                            onTransferFunds = { from, to, amount, notes ->
+                                viewModel.transferFunds(from, to, amount, notes)
+                            },
+                            onAddBudget = { cat, limit, threshold ->
+                                viewModel.addBudget(
+                                    categoryName = cat,
+                                    limitAmount = limit,
+                                    alertThresholdPercent = threshold
+                                )
+                            },
+                            onDeleteBudget = { viewModel.deleteBudget(it) },
+                            onAddFinancialGoal = { title, target, current, color ->
+                                viewModel.addFinancialGoal(
+                                    title = title,
+                                    targetAmount = target,
+                                    currentAmount = current,
+                                    colorHex = color
+                                )
+                            },
+                            onDeleteFinancialGoal = { viewModel.deleteFinancialGoal(it) }
+                        )
+                    }
                     LunaNavTab.TIMERS -> {
                         LunaFocusView(
                             tasks = uiState.allTasks,
@@ -607,7 +659,11 @@ fun HomeScreen(
                                 if (uiState.isHapticsEnabled) {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 }
-                                viewModel.openCreateSheet()
+                                if (pagerState.currentPage == LunaNavTab.WEALTH.ordinal) {
+                                    viewModel.openCreateTransactionSheet()
+                                } else {
+                                    viewModel.openCreateSheet()
+                                }
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -700,6 +756,46 @@ fun HomeScreen(
                             place = place
                         )
                     }
+                )
+            }
+
+            // Create / Edit Transaction Sheet
+            if (uiState.isCreateTransactionSheetOpen) {
+                CreateTransactionSheet(
+                    accounts = uiState.accounts,
+                    editingTransaction = uiState.editingTransaction,
+                    onDismiss = { viewModel.closeCreateTransactionSheet() },
+                    onSave = { title, amount, type, category, tags, accountId, currency, notes, timestamp ->
+                        val existing = uiState.editingTransaction
+                        if (existing != null) {
+                            viewModel.updateTransaction(
+                                existing.copy(
+                                    title = title,
+                                    amount = amount,
+                                    type = type,
+                                    category = category,
+                                    tags = tags,
+                                    accountId = accountId,
+                                    currency = currency,
+                                    notes = notes,
+                                    timestamp = timestamp
+                                )
+                            )
+                        } else {
+                            viewModel.addTransaction(
+                                title = title,
+                                amount = amount,
+                                type = type,
+                                category = category,
+                                tags = tags,
+                                accountId = accountId,
+                                currency = currency,
+                                notes = notes,
+                                timestamp = timestamp
+                            )
+                        }
+                    },
+                    onDelete = { id -> viewModel.deleteTransaction(id) }
                 )
             }
 

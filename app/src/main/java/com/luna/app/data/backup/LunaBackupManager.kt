@@ -1,6 +1,9 @@
 package com.luna.app.data.backup
 
 import com.luna.app.data.LunaAttribution
+import com.luna.app.data.local.entity.AccountEntity
+import com.luna.app.data.local.entity.BudgetEntity
+import com.luna.app.data.local.entity.FinancialGoalEntity
 import com.luna.app.data.local.entity.GoalEntity
 import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.entity.ProjectEntity
@@ -8,6 +11,7 @@ import com.luna.app.data.local.entity.RoutineEntity
 import com.luna.app.data.local.entity.SubtaskEntity
 import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.entity.TaskTemplateEntity
+import com.luna.app.data.local.entity.TransactionEntity
 import com.luna.app.data.preferences.AppThemeMode
 import com.luna.app.data.preferences.UserPreferencesRepository
 import com.luna.app.data.repository.TaskRepository
@@ -28,11 +32,15 @@ data class BackupResult(
     val projectCount: Int = 0,
     val goalCount: Int = 0,
     val templateCount: Int = 0,
+    val transactionCount: Int = 0,
+    val accountCount: Int = 0,
+    val budgetCount: Int = 0,
+    val financialGoalCount: Int = 0,
     val errorMessage: String? = null
 ) {
     val summary: String
         get() = if (success) {
-            "✓ Restored: $taskCount tasks, $habitCount habits, $routineCount routines, $projectCount projects, $goalCount goals, $templateCount templates"
+            "✓ Restored: $taskCount tasks, $habitCount habits, $routineCount routines, $projectCount projects, $goalCount goals, $templateCount templates, $transactionCount transactions, $accountCount accounts"
         } else {
             errorMessage ?: "Import failed. Please check the backup file."
         }
@@ -228,6 +236,84 @@ object LunaBackupManager {
             templatesArray.put(tplObj)
         }
         root.put("templates", templatesArray)
+
+        // 9. Accounts
+        val accountsArray = JSONArray()
+        val accounts = repository.getAllAccountsFlow().first()
+        for (a in accounts) {
+            val aObj = JSONObject().apply {
+                put("id", a.id)
+                put("name", a.name)
+                put("accountType", a.accountType)
+                put("balance", a.balance)
+                put("currencyCode", a.currencyCode)
+                put("colorHex", a.colorHex)
+                put("icon", a.icon)
+                put("isArchived", a.isArchived)
+            }
+            accountsArray.put(aObj)
+        }
+        root.put("accounts", accountsArray)
+
+        // 10. Transactions
+        val transactionsArray = JSONArray()
+        val transactions = repository.getAllTransactionsFlow().first()
+        for (tx in transactions) {
+            val txObj = JSONObject().apply {
+                put("id", tx.id)
+                put("title", tx.title)
+                put("amount", tx.amount)
+                put("type", tx.type)
+                put("timestamp", tx.timestamp)
+                put("category", tx.category)
+                put("tags", JSONArray(tx.tags))
+                put("accountId", tx.accountId)
+                put("currency", tx.currency)
+                put("receiptUri", tx.receiptUri ?: JSONObject.NULL)
+                put("recurrenceRule", tx.recurrenceRule)
+                put("linkedTaskId", tx.linkedTaskId ?: JSONObject.NULL)
+                put("linkedProjectId", tx.linkedProjectId ?: JSONObject.NULL)
+                put("linkedGoalId", tx.linkedGoalId ?: JSONObject.NULL)
+                put("notes", tx.notes ?: JSONObject.NULL)
+                put("isTaxDeductible", tx.isTaxDeductible)
+                put("isExcludedFromBudget", tx.isExcludedFromBudget)
+            }
+            transactionsArray.put(txObj)
+        }
+        root.put("transactions", transactionsArray)
+
+        // 11. Budgets
+        val budgetsArray = JSONArray()
+        val budgets = repository.getAllBudgetsFlow().first()
+        for (b in budgets) {
+            val bObj = JSONObject().apply {
+                put("id", b.id)
+                put("categoryName", b.categoryName)
+                put("limitAmount", b.limitAmount)
+                put("period", b.period)
+                put("alertThresholdPercent", b.alertThresholdPercent)
+                put("currencyCode", b.currencyCode)
+            }
+            budgetsArray.put(bObj)
+        }
+        root.put("budgets", budgetsArray)
+
+        // 12. Financial Goals
+        val finGoalsArray = JSONArray()
+        val finGoals = repository.getAllFinancialGoalsFlow().first()
+        for (fg in finGoals) {
+            val fgObj = JSONObject().apply {
+                put("id", fg.id)
+                put("title", fg.title)
+                put("targetAmount", fg.targetAmount)
+                put("currentAmount", fg.currentAmount)
+                put("targetDate", fg.targetDate ?: JSONObject.NULL)
+                put("colorHex", fg.colorHex)
+                put("icon", fg.icon)
+            }
+            finGoalsArray.put(fgObj)
+        }
+        root.put("financialGoals", finGoalsArray)
 
         root.toString(2)
     }
@@ -556,6 +642,133 @@ object LunaBackupManager {
                 }
             }
 
+            var importedAccounts = 0
+            var importedTransactions = 0
+            var importedBudgets = 0
+            var importedGoalsFin = 0
+
+            // 8. Restore Accounts
+            if (root.has("accounts")) {
+                val array = root.getJSONArray("accounts")
+                val accList = mutableListOf<AccountEntity>()
+                for (i in 0 until array.length()) {
+                    try {
+                        val item = array.getJSONObject(i)
+                        val name = item.getString("name").trim()
+                        if (name.isBlank()) continue
+                        accList.add(
+                            AccountEntity(
+                                id = item.optLong("id", 0L),
+                                name = name,
+                                accountType = item.optString("accountType", "CASH"),
+                                balance = item.optDouble("balance", 0.0),
+                                currencyCode = item.optString("currencyCode", "USD"),
+                                colorHex = item.optString("colorHex", "#3B82F6"),
+                                icon = item.optString("icon", "Wallet"),
+                                isArchived = item.optBoolean("isArchived", false)
+                            )
+                        )
+                        importedAccounts++
+                    } catch (_: Exception) {}
+                }
+                if (accList.isNotEmpty()) {
+                    repository.importAccounts(accList)
+                }
+            }
+
+            // 9. Restore Transactions
+            if (root.has("transactions")) {
+                val array = root.getJSONArray("transactions")
+                val txList = mutableListOf<TransactionEntity>()
+                for (i in 0 until array.length()) {
+                    try {
+                        val item = array.getJSONObject(i)
+                        val title = item.getString("title").trim()
+                        if (title.isBlank()) continue
+                        txList.add(
+                            TransactionEntity(
+                                id = item.optLong("id", 0L),
+                                title = title,
+                                amount = item.optDouble("amount", 0.0),
+                                type = item.optString("type", "EXPENSE"),
+                                timestamp = item.optLong("timestamp", System.currentTimeMillis()),
+                                category = item.optString("category", "General"),
+                                tags = item.optJSONArray("tags")?.toStringList() ?: emptyList(),
+                                accountId = item.optLong("accountId", 1L),
+                                currency = item.optString("currency", "USD"),
+                                receiptUri = item.optNullableString("receiptUri"),
+                                recurrenceRule = item.optString("recurrenceRule", "NONE"),
+                                linkedTaskId = item.optNullableLong("linkedTaskId"),
+                                linkedProjectId = item.optNullableLong("linkedProjectId"),
+                                linkedGoalId = item.optNullableLong("linkedGoalId"),
+                                notes = item.optNullableString("notes"),
+                                isTaxDeductible = item.optBoolean("isTaxDeductible", false),
+                                isExcludedFromBudget = item.optBoolean("isExcludedFromBudget", false)
+                            )
+                        )
+                        importedTransactions++
+                    } catch (_: Exception) {}
+                }
+                if (txList.isNotEmpty()) {
+                    repository.importTransactions(txList)
+                }
+            }
+
+            // 10. Restore Budgets
+            if (root.has("budgets")) {
+                val array = root.getJSONArray("budgets")
+                val bList = mutableListOf<BudgetEntity>()
+                for (i in 0 until array.length()) {
+                    try {
+                        val item = array.getJSONObject(i)
+                        val categoryName = item.getString("categoryName").trim()
+                        if (categoryName.isBlank()) continue
+                        bList.add(
+                            BudgetEntity(
+                                id = item.optLong("id", 0L),
+                                categoryName = categoryName,
+                                limitAmount = item.optDouble("limitAmount", 0.0),
+                                period = item.optString("period", "MONTHLY"),
+                                alertThresholdPercent = item.optDouble("alertThresholdPercent", 80.0),
+                                currencyCode = item.optString("currencyCode", "USD")
+                            )
+                        )
+                        importedBudgets++
+                    } catch (_: Exception) {}
+                }
+                if (bList.isNotEmpty()) {
+                    repository.importBudgets(bList)
+                }
+            }
+
+            // 11. Restore Financial Goals
+            if (root.has("financialGoals")) {
+                val array = root.getJSONArray("financialGoals")
+                val fgList = mutableListOf<FinancialGoalEntity>()
+                for (i in 0 until array.length()) {
+                    try {
+                        val item = array.getJSONObject(i)
+                        val title = item.getString("title").trim()
+                        if (title.isBlank()) continue
+                        fgList.add(
+                            FinancialGoalEntity(
+                                id = item.optLong("id", 0L),
+                                title = title,
+                                targetAmount = item.optDouble("targetAmount", 0.0),
+                                currentAmount = item.optDouble("currentAmount", 0.0),
+                                targetDate = item.optNullableLong("targetDate"),
+                                colorHex = item.optString("colorHex", "#10B981"),
+                                icon = item.optString("icon", "Savings")
+                            )
+                        )
+                        importedGoalsFin++
+                    } catch (_: Exception) {}
+                }
+                if (fgList.isNotEmpty()) {
+                    repository.importFinancialGoals(fgList)
+                }
+            }
+
             BackupResult(
                 success = true,
                 taskCount = importedTasks,
@@ -563,7 +776,11 @@ object LunaBackupManager {
                 routineCount = importedRoutines,
                 projectCount = importedProjects,
                 goalCount = importedGoals,
-                templateCount = importedTemplates
+                templateCount = importedTemplates,
+                transactionCount = importedTransactions,
+                accountCount = importedAccounts,
+                budgetCount = importedBudgets,
+                financialGoalCount = importedGoalsFin
             )
         } catch (e: Exception) {
             BackupResult(success = false, errorMessage = "Failed to parse backup JSON: ${e.localizedMessage}")

@@ -1,5 +1,8 @@
 package com.luna.app.data.repository
 
+import com.luna.app.data.local.entity.AccountEntity
+import com.luna.app.data.local.entity.BudgetEntity
+import com.luna.app.data.local.entity.FinancialGoalEntity
 import com.luna.app.data.local.entity.GoalEntity
 import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.entity.MissedReasonEntity
@@ -9,6 +12,7 @@ import com.luna.app.data.local.entity.SubtaskEntity
 import com.luna.app.data.local.entity.TaskActivityEntity
 import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.entity.TaskTemplateEntity
+import com.luna.app.data.local.entity.TransactionEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.TaskStatus
@@ -163,4 +167,73 @@ interface TaskRepository {
     fun getActivitiesForTaskFlow(taskId: Long): Flow<List<TaskActivityEntity>>
     fun getRecentActivitiesFlow(): Flow<List<TaskActivityEntity>>
     suspend fun addActivity(taskId: Long, message: String, type: String = "LOG", author: String = "You"): Long
+
+    // Financial System: Transactions
+    fun getAllTransactionsFlow(): Flow<List<TransactionEntity>>
+    fun getRecentTransactionsFlow(limit: Int = 20): Flow<List<TransactionEntity>>
+    fun getTransactionsByAccountFlow(accountId: Long): Flow<List<TransactionEntity>>
+    fun getTransactionsByCategoryFlow(category: String): Flow<List<TransactionEntity>>
+    suspend fun addTransaction(
+        title: String,
+        amount: Double,
+        type: String = "EXPENSE",
+        category: String = "General",
+        tags: List<String> = emptyList(),
+        accountId: Long = 1L,
+        currency: String = "USD",
+        receiptUri: String? = null,
+        recurrenceRule: String = "NONE",
+        linkedTaskId: Long? = null,
+        linkedProjectId: Long? = null,
+        linkedGoalId: Long? = null,
+        notes: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ): Long
+    suspend fun updateTransaction(transaction: TransactionEntity)
+    suspend fun deleteTransaction(id: Long)
+
+    // Financial System: Accounts & Wallets
+    fun getAllAccountsFlow(): Flow<List<AccountEntity>>
+    suspend fun addAccount(
+        name: String,
+        accountType: String = "CASH",
+        balance: Double = 0.0,
+        currencyCode: String = "USD",
+        colorHex: String = "#3B82F6",
+        icon: String = "Wallet"
+    ): Long
+    suspend fun updateAccount(account: AccountEntity)
+    suspend fun deleteAccount(id: Long)
+    suspend fun transferFunds(fromAccountId: Long, toAccountId: Long, amount: Double, notes: String? = null)
+
+    // Financial System: Budgets
+    fun getAllBudgetsFlow(): Flow<List<BudgetEntity>>
+    suspend fun addBudget(
+        categoryName: String,
+        limitAmount: Double,
+        period: String = "MONTHLY",
+        alertThresholdPercent: Double = 80.0,
+        currencyCode: String = "USD"
+    ): Long
+    suspend fun updateBudget(budget: BudgetEntity)
+    suspend fun deleteBudget(id: Long)
+
+    // Financial System: Goals
+    fun getAllFinancialGoalsFlow(): Flow<List<FinancialGoalEntity>>
+    suspend fun addFinancialGoal(
+        title: String,
+        targetAmount: Double,
+        currentAmount: Double = 0.0,
+        targetDate: Long? = null,
+        colorHex: String = "#10B981",
+        icon: String = "Savings"
+    ): Long
+    suspend fun updateFinancialGoal(goal: FinancialGoalEntity)
+    suspend fun deleteFinancialGoal(id: Long)
+
+    // Batch Import Primitives for Backup/Restore
+    suspend fun importTransactions(transactions: List<TransactionEntity>)
+    suspend fun importAccounts(accounts: List<AccountEntity>)
+    suspend fun importBudgets(budgets: List<BudgetEntity>)
+    suspend fun importFinancialGoals(goals: List<FinancialGoalEntity>)
 }

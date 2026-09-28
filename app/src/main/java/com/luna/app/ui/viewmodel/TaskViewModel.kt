@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.luna.app.audio.TactileSoundPlayer
 import com.luna.app.data.local.DentalTimetableSeeder
+import com.luna.app.data.local.entity.AccountEntity
+import com.luna.app.data.local.entity.BudgetEntity
+import com.luna.app.data.local.entity.FinancialGoalEntity
 import com.luna.app.data.local.entity.GoalEntity
 import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.entity.ProjectEntity
@@ -12,6 +15,7 @@ import com.luna.app.data.local.entity.RoutineEntity
 import com.luna.app.data.local.entity.SubtaskEntity
 import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.entity.TaskTemplateEntity
+import com.luna.app.data.local.entity.TransactionEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.data.preferences.AppThemeMode
 import com.luna.app.data.preferences.UserPreferencesRepository
@@ -84,7 +88,16 @@ data class LunaUiState(
     val focusWorkSeconds: Int = 25 * 60,
     val shortBreakSeconds: Int = 5 * 60,
     val longBreakSeconds: Int = 15 * 60,
-    val isOnboardingCompleted: Boolean = false
+    val isOnboardingCompleted: Boolean = false,
+    val transactions: List<TransactionEntity> = emptyList(),
+    val accounts: List<AccountEntity> = emptyList(),
+    val budgets: List<BudgetEntity> = emptyList(),
+    val financialGoals: List<FinancialGoalEntity> = emptyList(),
+    val isCreateTransactionSheetOpen: Boolean = false,
+    val isTransferSheetOpen: Boolean = false,
+    val isCreateBudgetSheetOpen: Boolean = false,
+    val isCreateFinancialGoalSheetOpen: Boolean = false,
+    val editingTransaction: TransactionEntity? = null
 )
 
 class TaskViewModel(
@@ -135,6 +148,21 @@ class TaskViewModel(
 
     private val _completingTaskIds = MutableStateFlow<Set<Long>>(emptySet())
     val completingTaskIds: StateFlow<Set<Long>> = _completingTaskIds.asStateFlow()
+
+    private val _isCreateTransactionSheetOpen = MutableStateFlow(false)
+    val isCreateTransactionSheetOpen: StateFlow<Boolean> = _isCreateTransactionSheetOpen.asStateFlow()
+
+    private val _isTransferSheetOpen = MutableStateFlow(false)
+    val isTransferSheetOpen: StateFlow<Boolean> = _isTransferSheetOpen.asStateFlow()
+
+    private val _isCreateBudgetSheetOpen = MutableStateFlow(false)
+    val isCreateBudgetSheetOpen: StateFlow<Boolean> = _isCreateBudgetSheetOpen.asStateFlow()
+
+    private val _isCreateFinancialGoalSheetOpen = MutableStateFlow(false)
+    val isCreateFinancialGoalSheetOpen: StateFlow<Boolean> = _isCreateFinancialGoalSheetOpen.asStateFlow()
+
+    private val _editingTransaction = MutableStateFlow<TransactionEntity?>(null)
+    val editingTransaction: StateFlow<TransactionEntity?> = _editingTransaction.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -240,8 +268,17 @@ class TaskViewModel(
         Pair(goals, routines)
     }
 
-    private val dataState = combine(baseDataState, extraDataState) { (tasks, templates, projects, habits), (goals, routines) ->
-        DataBundle(tasks, templates, projects, habits, goals, routines)
+    private val financialDataState = combine(
+        repository.getAllTransactionsFlow(),
+        repository.getAllAccountsFlow(),
+        repository.getAllBudgetsFlow(),
+        repository.getAllFinancialGoalsFlow()
+    ) { transactions, accounts, budgets, goals ->
+        Quad(transactions, accounts, budgets, goals)
+    }
+
+    private val dataState = combine(baseDataState, extraDataState, financialDataState) { (tasks, templates, projects, habits), (goals, routines), (transactions, accounts, budgets, finGoals) ->
+        DataBundle(tasks, templates, projects, habits, goals, routines, transactions, accounts, budgets, finGoals)
     }
 
     private val uiControlState = combine(
@@ -262,11 +299,22 @@ class TaskViewModel(
         FilterQueryState(smartFilter, query, viewMode, sheetOpen, templatesOpen, editing, selectedIds, settingsOpen, completingIds)
     }
 
+    private val financialUiControlState = combine(
+        _isCreateTransactionSheetOpen,
+        _isTransferSheetOpen,
+        _isCreateBudgetSheetOpen,
+        _isCreateFinancialGoalSheetOpen,
+        _editingTransaction
+    ) { txOpen, transferOpen, budgetOpen, goalOpen, editingTx ->
+        FinancialUiControlState(txOpen, transferOpen, budgetOpen, goalOpen, editingTx)
+    }
+
     val uiState: StateFlow<LunaUiState> = combine(
         dataState,
         preferencesState,
-        uiControlState
-    ) { dataBundle, prefs, uiControl ->
+        uiControlState,
+        financialUiControlState
+    ) { dataBundle, prefs, uiControl, finControl ->
         val rawTasks = dataBundle.tasks.map { it.task }
         val smartCounts = calculateSmartFilterCounts(rawTasks)
         val legacyCounts = calculateLegacyFilterCounts(rawTasks)
@@ -324,7 +372,16 @@ class TaskViewModel(
             focusWorkSeconds = prefs.focusWorkSeconds,
             shortBreakSeconds = prefs.shortBreakSeconds,
             longBreakSeconds = prefs.longBreakSeconds,
-            isOnboardingCompleted = prefs.isOnboardingCompleted
+            isOnboardingCompleted = prefs.isOnboardingCompleted,
+            transactions = dataBundle.transactions,
+            accounts = dataBundle.accounts,
+            budgets = dataBundle.budgets,
+            financialGoals = dataBundle.financialGoals,
+            isCreateTransactionSheetOpen = finControl.createTxOpen,
+            isTransferSheetOpen = finControl.transferOpen,
+            isCreateBudgetSheetOpen = finControl.createBudgetOpen,
+            isCreateFinancialGoalSheetOpen = finControl.createFinancialGoalOpen,
+            editingTransaction = finControl.editingTx
         )
     }.stateIn(
         scope = viewModelScope,
@@ -1309,6 +1366,194 @@ class TaskViewModel(
         return cal.timeInMillis
     }
 
+    // --- Financial System Actions ---
+    fun openCreateTransactionSheet(transaction: TransactionEntity? = null) {
+        _editingTransaction.value = transaction
+        _isCreateTransactionSheetOpen.value = true
+    }
+
+    fun closeCreateTransactionSheet() {
+        _isCreateTransactionSheetOpen.value = false
+        _editingTransaction.value = null
+    }
+
+    fun openTransferSheet() {
+        _isTransferSheetOpen.value = true
+    }
+
+    fun closeTransferSheet() {
+        _isTransferSheetOpen.value = false
+    }
+
+    fun openCreateBudgetSheet() {
+        _isCreateBudgetSheetOpen.value = true
+    }
+
+    fun closeCreateBudgetSheet() {
+        _isCreateBudgetSheetOpen.value = false
+    }
+
+    fun openCreateFinancialGoalSheet() {
+        _isCreateFinancialGoalSheetOpen.value = true
+    }
+
+    fun closeCreateFinancialGoalSheet() {
+        _isCreateFinancialGoalSheetOpen.value = false
+    }
+
+    fun addTransaction(
+        title: String,
+        amount: Double,
+        type: String = "EXPENSE",
+        category: String = "General",
+        tags: List<String> = emptyList(),
+        accountId: Long = 1L,
+        currency: String = "USD",
+        receiptUri: String? = null,
+        recurrenceRule: String = "NONE",
+        linkedTaskId: Long? = null,
+        linkedProjectId: Long? = null,
+        linkedGoalId: Long? = null,
+        notes: String? = null,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        viewModelScope.launch {
+            repository.addTransaction(
+                title = title,
+                amount = amount,
+                type = type,
+                category = category,
+                tags = tags,
+                accountId = accountId,
+                currency = currency,
+                receiptUri = receiptUri,
+                recurrenceRule = recurrenceRule,
+                linkedTaskId = linkedTaskId,
+                linkedProjectId = linkedProjectId,
+                linkedGoalId = linkedGoalId,
+                notes = notes,
+                timestamp = timestamp
+            )
+        }
+    }
+
+    fun updateTransaction(transaction: TransactionEntity) {
+        viewModelScope.launch {
+            repository.updateTransaction(transaction)
+        }
+    }
+
+    fun deleteTransaction(id: Long) {
+        viewModelScope.launch {
+            repository.deleteTransaction(id)
+        }
+    }
+
+    fun addAccount(
+        name: String,
+        accountType: String = "CASH",
+        balance: Double = 0.0,
+        currencyCode: String = "USD",
+        colorHex: String = "#3B82F6",
+        icon: String = "Wallet"
+    ) {
+        viewModelScope.launch {
+            repository.addAccount(
+                name = name,
+                accountType = accountType,
+                balance = balance,
+                currencyCode = currencyCode,
+                colorHex = colorHex,
+                icon = icon
+            )
+        }
+    }
+
+    fun updateAccount(account: AccountEntity) {
+        viewModelScope.launch {
+            repository.updateAccount(account)
+        }
+    }
+
+    fun deleteAccount(id: Long) {
+        viewModelScope.launch {
+            repository.deleteAccount(id)
+        }
+    }
+
+    fun transferFunds(
+        fromAccountId: Long,
+        toAccountId: Long,
+        amount: Double,
+        notes: String? = null
+    ) {
+        viewModelScope.launch {
+            repository.transferFunds(fromAccountId, toAccountId, amount, notes)
+        }
+    }
+
+    fun addBudget(
+        categoryName: String,
+        limitAmount: Double,
+        period: String = "MONTHLY",
+        alertThresholdPercent: Double = 80.0,
+        currencyCode: String = "USD"
+    ) {
+        viewModelScope.launch {
+            repository.addBudget(
+                categoryName = categoryName,
+                limitAmount = limitAmount,
+                period = period,
+                alertThresholdPercent = alertThresholdPercent,
+                currencyCode = currencyCode
+            )
+        }
+    }
+
+    fun updateBudget(budget: BudgetEntity) {
+        viewModelScope.launch {
+            repository.updateBudget(budget)
+        }
+    }
+
+    fun deleteBudget(id: Long) {
+        viewModelScope.launch {
+            repository.deleteBudget(id)
+        }
+    }
+
+    fun addFinancialGoal(
+        title: String,
+        targetAmount: Double,
+        currentAmount: Double = 0.0,
+        targetDate: Long? = null,
+        colorHex: String = "#10B981",
+        icon: String = "Savings"
+    ) {
+        viewModelScope.launch {
+            repository.addFinancialGoal(
+                title = title,
+                targetAmount = targetAmount,
+                currentAmount = currentAmount,
+                targetDate = targetDate,
+                colorHex = colorHex,
+                icon = icon
+            )
+        }
+    }
+
+    fun updateFinancialGoal(goal: FinancialGoalEntity) {
+        viewModelScope.launch {
+            repository.updateFinancialGoal(goal)
+        }
+    }
+
+    fun deleteFinancialGoal(id: Long) {
+        viewModelScope.launch {
+            repository.deleteFinancialGoal(id)
+        }
+    }
+
     companion object {
         fun provideFactory(
             repository: TaskRepository,
@@ -1351,7 +1596,18 @@ private data class DataBundle(
     val projects: List<ProjectEntity>,
     val habits: List<HabitEntity>,
     val goals: List<GoalEntity>,
-    val routines: List<RoutineEntity>
+    val routines: List<RoutineEntity>,
+    val transactions: List<TransactionEntity>,
+    val accounts: List<AccountEntity>,
+    val budgets: List<BudgetEntity>,
+    val financialGoals: List<FinancialGoalEntity>
+)
+private data class FinancialUiControlState(
+    val createTxOpen: Boolean,
+    val transferOpen: Boolean,
+    val createBudgetOpen: Boolean,
+    val createFinancialGoalOpen: Boolean,
+    val editingTx: TransactionEntity?
 )
 private data class FilterQueryState(
     val smartFilter: SmartFilter,

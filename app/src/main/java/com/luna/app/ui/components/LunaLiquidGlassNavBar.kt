@@ -51,6 +51,7 @@ import com.luna.app.ui.theme.LunaTheme
 enum class LunaNavTab {
     HOME,
     TASKS,
+    WEALTH,
     TIMERS,
     STATS
 }
@@ -132,9 +133,10 @@ fun LunaLiquidGlassNavBar(
         ) {
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().fillMaxHeight()) {
                 val totalWidth = maxWidth
-                val tabCount = 4
+                val tabCount = 5
                 val isHomeSelected = selectedTab == LunaNavTab.HOME
                 val isTasksSelected = selectedTab == LunaNavTab.TASKS
+                val isWealthSelected = selectedTab == LunaNavTab.WEALTH
                 val isTimersSelected = selectedTab == LunaNavTab.TIMERS
                 val isStatsSelected = selectedTab == LunaNavTab.STATS
 
@@ -205,7 +207,7 @@ fun LunaLiquidGlassNavBar(
                         )
                 )
 
-                // 4 Interactive Navigation Tabs
+                // 5 Interactive Navigation Tabs
                 Row(
                     modifier = Modifier.fillMaxWidth().fillMaxHeight(),
                     verticalAlignment = Alignment.CenterVertically
@@ -231,6 +233,18 @@ fun LunaLiquidGlassNavBar(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             onTabSelected(LunaNavTab.TASKS)
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    NavBarTabItem(
+                        icon = UntitledIcons.WalletTab,
+                        label = "Wealth",
+                        showLabel = showTabLabels,
+                        isSelected = isWealthSelected,
+                        isLight = isLight,
+                        onClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onTabSelected(LunaNavTab.WEALTH)
                         },
                         modifier = Modifier.weight(1f)
                     )

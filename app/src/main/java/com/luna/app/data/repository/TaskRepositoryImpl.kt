@@ -1,5 +1,8 @@
 package com.luna.app.data.repository
 
+import com.luna.app.data.local.dao.AccountDao
+import com.luna.app.data.local.dao.BudgetDao
+import com.luna.app.data.local.dao.FinancialGoalDao
 import com.luna.app.data.local.dao.GoalDao
 import com.luna.app.data.local.dao.HabitDao
 import com.luna.app.data.local.dao.MissedReasonDao
@@ -7,6 +10,10 @@ import com.luna.app.data.local.dao.ProjectDao
 import com.luna.app.data.local.dao.RoutineDao
 import com.luna.app.data.local.dao.TaskActivityDao
 import com.luna.app.data.local.dao.TaskDao
+import com.luna.app.data.local.dao.TransactionDao
+import com.luna.app.data.local.entity.AccountEntity
+import com.luna.app.data.local.entity.BudgetEntity
+import com.luna.app.data.local.entity.FinancialGoalEntity
 import com.luna.app.data.local.entity.GoalEntity
 import com.luna.app.data.local.entity.HabitEntity
 import com.luna.app.data.local.entity.MissedReasonEntity
@@ -16,6 +23,7 @@ import com.luna.app.data.local.entity.SubtaskEntity
 import com.luna.app.data.local.entity.TaskActivityEntity
 import com.luna.app.data.local.entity.TaskEntity
 import com.luna.app.data.local.entity.TaskTemplateEntity
+import com.luna.app.data.local.entity.TransactionEntity
 import com.luna.app.data.local.model.TaskWithDetails
 import com.luna.app.domain.model.Priority
 import com.luna.app.domain.model.RecurrenceType
@@ -34,7 +42,11 @@ class TaskRepositoryImpl(
     private val goalDao: GoalDao,
     private val routineDao: RoutineDao,
     private val taskActivityDao: TaskActivityDao,
-    private val missedReasonDao: MissedReasonDao
+    private val missedReasonDao: MissedReasonDao,
+    private val transactionDao: TransactionDao,
+    private val accountDao: AccountDao,
+    private val budgetDao: BudgetDao,
+    private val financialGoalDao: FinancialGoalDao
 ) : TaskRepository {
 
     override fun getTasksWithDetailsFlow(): Flow<List<TaskWithDetails>> =
@@ -789,5 +801,225 @@ class TaskRepositoryImpl(
             type = type
         )
         return taskActivityDao.insertActivity(entity)
+    }
+
+    // --- Financial System: Transactions ---
+    override fun getAllTransactionsFlow(): Flow<List<TransactionEntity>> =
+        transactionDao.getAllTransactionsFlow()
+
+    override fun getRecentTransactionsFlow(limit: Int): Flow<List<TransactionEntity>> =
+        transactionDao.getRecentTransactionsFlow(limit)
+
+    override fun getTransactionsByAccountFlow(accountId: Long): Flow<List<TransactionEntity>> =
+        transactionDao.getTransactionsByAccountFlow(accountId)
+
+    override fun getTransactionsByCategoryFlow(category: String): Flow<List<TransactionEntity>> =
+        transactionDao.getTransactionsByCategoryFlow(category)
+
+    override suspend fun addTransaction(
+        title: String,
+        amount: Double,
+        type: String,
+        category: String,
+        tags: List<String>,
+        accountId: Long,
+        currency: String,
+        receiptUri: String?,
+        recurrenceRule: String,
+        linkedTaskId: Long?,
+        linkedProjectId: Long?,
+        linkedGoalId: Long?,
+        notes: String?,
+        timestamp: Long
+    ): Long {
+        val entity = TransactionEntity(
+            title = title.trim(),
+            amount = amount,
+            type = type,
+            category = category,
+            tags = tags,
+            accountId = accountId,
+            currency = currency,
+            receiptUri = receiptUri,
+            recurrenceRule = recurrenceRule,
+            linkedTaskId = linkedTaskId,
+            linkedProjectId = linkedProjectId,
+            linkedGoalId = linkedGoalId,
+            notes = notes,
+            timestamp = timestamp
+        )
+        val id = transactionDao.insertTransaction(entity)
+        val delta = if (type.equals("INCOME", ignoreCase = true)) amount else -amount
+        accountDao.updateBalance(accountId, delta)
+        return id
+    }
+
+    override suspend fun updateTransaction(transaction: TransactionEntity) {
+        val old = transactionDao.getTransactionById(transaction.id)
+        if (old != null) {
+            val oldDelta = if (old.type.equals("INCOME", ignoreCase = true)) -old.amount else old.amount
+            accountDao.updateBalance(old.accountId, oldDelta)
+        }
+        transactionDao.updateTransaction(transaction)
+        val newDelta = if (transaction.type.equals("INCOME", ignoreCase = true)) transaction.amount else -transaction.amount
+        accountDao.updateBalance(transaction.accountId, newDelta)
+    }
+
+    override suspend fun deleteTransaction(id: Long) {
+        val old = transactionDao.getTransactionById(id)
+        if (old != null) {
+            val oldDelta = if (old.type.equals("INCOME", ignoreCase = true)) -old.amount else old.amount
+            accountDao.updateBalance(old.accountId, oldDelta)
+            transactionDao.deleteTransactionById(id)
+        }
+    }
+
+    // --- Financial System: Accounts & Wallets ---
+    override fun getAllAccountsFlow(): Flow<List<AccountEntity>> =
+        accountDao.getAllAccountsFlow()
+
+    override suspend fun addAccount(
+        name: String,
+        accountType: String,
+        balance: Double,
+        currencyCode: String,
+        colorHex: String,
+        icon: String
+    ): Long {
+        val entity = AccountEntity(
+            name = name.trim(),
+            accountType = accountType,
+            balance = balance,
+            currencyCode = currencyCode,
+            colorHex = colorHex,
+            icon = icon
+        )
+        return accountDao.insertAccount(entity)
+    }
+
+    override suspend fun updateAccount(account: AccountEntity) {
+        accountDao.updateAccount(account)
+    }
+
+    override suspend fun deleteAccount(id: Long) {
+        accountDao.deleteAccountById(id)
+    }
+
+    override suspend fun transferFunds(
+        fromAccountId: Long,
+        toAccountId: Long,
+        amount: Double,
+        notes: String?
+    ) {
+        val fromAccount = accountDao.getAccountById(fromAccountId)
+        val toAccount = accountDao.getAccountById(toAccountId)
+        val fromName = fromAccount?.name ?: "Account #$fromAccountId"
+        val toName = toAccount?.name ?: "Account #$toAccountId"
+        val now = System.currentTimeMillis()
+
+        val outTx = TransactionEntity(
+            title = "Transfer to $toName",
+            amount = amount,
+            type = "EXPENSE",
+            category = "Transfer",
+            tags = listOf("transfer", "transfer-out"),
+            accountId = fromAccountId,
+            currency = fromAccount?.currencyCode ?: "USD",
+            notes = notes,
+            timestamp = now
+        )
+        transactionDao.insertTransaction(outTx)
+        accountDao.updateBalance(fromAccountId, -amount)
+
+        val inTx = TransactionEntity(
+            title = "Transfer from $fromName",
+            amount = amount,
+            type = "INCOME",
+            category = "Transfer",
+            tags = listOf("transfer", "transfer-in"),
+            accountId = toAccountId,
+            currency = toAccount?.currencyCode ?: "USD",
+            notes = notes,
+            timestamp = now
+        )
+        transactionDao.insertTransaction(inTx)
+        accountDao.updateBalance(toAccountId, amount)
+    }
+
+    // --- Financial System: Budgets ---
+    override fun getAllBudgetsFlow(): Flow<List<BudgetEntity>> =
+        budgetDao.getAllBudgetsFlow()
+
+    override suspend fun addBudget(
+        categoryName: String,
+        limitAmount: Double,
+        period: String,
+        alertThresholdPercent: Double,
+        currencyCode: String
+    ): Long {
+        val entity = BudgetEntity(
+            categoryName = categoryName.trim(),
+            limitAmount = limitAmount,
+            period = period,
+            alertThresholdPercent = alertThresholdPercent,
+            currencyCode = currencyCode
+        )
+        return budgetDao.insertBudget(entity)
+    }
+
+    override suspend fun updateBudget(budget: BudgetEntity) {
+        budgetDao.updateBudget(budget)
+    }
+
+    override suspend fun deleteBudget(id: Long) {
+        budgetDao.deleteBudgetById(id)
+    }
+
+    // --- Financial System: Goals ---
+    override fun getAllFinancialGoalsFlow(): Flow<List<FinancialGoalEntity>> =
+        financialGoalDao.getAllFinancialGoalsFlow()
+
+    override suspend fun addFinancialGoal(
+        title: String,
+        targetAmount: Double,
+        currentAmount: Double,
+        targetDate: Long?,
+        colorHex: String,
+        icon: String
+    ): Long {
+        val entity = FinancialGoalEntity(
+            title = title.trim(),
+            targetAmount = targetAmount,
+            currentAmount = currentAmount,
+            targetDate = targetDate,
+            colorHex = colorHex,
+            icon = icon
+        )
+        return financialGoalDao.insertFinancialGoal(entity)
+    }
+
+    override suspend fun updateFinancialGoal(goal: FinancialGoalEntity) {
+        financialGoalDao.updateFinancialGoal(goal)
+    }
+
+    override suspend fun deleteFinancialGoal(id: Long) {
+        financialGoalDao.deleteFinancialGoalById(id)
+    }
+
+    // --- Batch Import Primitives for Backup/Restore ---
+    override suspend fun importTransactions(transactions: List<TransactionEntity>) {
+        transactionDao.insertTransactions(transactions)
+    }
+
+    override suspend fun importAccounts(accounts: List<AccountEntity>) {
+        accountDao.insertAccounts(accounts)
+    }
+
+    override suspend fun importBudgets(budgets: List<BudgetEntity>) {
+        budgetDao.insertBudgets(budgets)
+    }
+
+    override suspend fun importFinancialGoals(goals: List<FinancialGoalEntity>) {
+        financialGoalDao.insertFinancialGoals(goals)
     }
 }
