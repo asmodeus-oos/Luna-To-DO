@@ -138,24 +138,58 @@ fun LunaHomeDashboardView(
         SimpleDateFormat("EEEE, MMMM d", Locale.getDefault()).format(Date())
     }
 
-    // Filter tasks
-    val allActive = tasks.filter { !it.task.isCompleted }
-    val completedToday = tasks.count { it.task.isCompleted }
-    val totalToday = tasks.size
+    val todayBounds = remember {
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+        val end = start + (24 * 60 * 60 * 1000L) - 1L
+        Pair(start, end)
+    }
+    val todayStart = todayBounds.first
+    val todayEnd = todayBounds.second
 
-    val inProgressTasks = allActive.filter { it.task.status == TaskStatus.IN_PROGRESS }
-        .sortedBy { it.task.effectiveDeadlineEpoch ?: Long.MAX_VALUE }
-
-    val overdueTasks = allActive.filter {
-        it.task.status == TaskStatus.OVERDUE_PENDING_REASON ||
-                (it.task.effectiveDeadlineEpoch != null && it.task.effectiveDeadlineEpoch!! < System.currentTimeMillis())
+    // Scoped strictly to TODAY:
+    // A task belongs to Today if:
+    // 1. Its dueDate is today (or overdue before today and not yet completed)
+    // 2. OR it was completed today (completedAt in todayStart..todayEnd)
+    // 3. OR it has no dueDate but was created today or is currently IN_PROGRESS
+    val todayTasks = remember(tasks, todayStart, todayEnd) {
+        tasks.filter { item ->
+            val t = item.task
+            if (t.isCompleted) {
+                (t.completedAt != null && t.completedAt in todayStart..todayEnd) ||
+                (t.completedAt == null && t.dueDate != null && t.dueDate in todayStart..todayEnd)
+            } else {
+                if (t.dueDate != null) {
+                    t.dueDate <= todayEnd
+                } else {
+                    t.createdAt in todayStart..todayEnd || t.status == TaskStatus.IN_PROGRESS
+                }
+            }
+        }
     }
 
-    val unstartedToday = allActive.filter {
+    val activeTodayTasks = todayTasks.filter { !it.task.isCompleted }
+    val completedTodayTasks = todayTasks.filter { it.task.isCompleted }
+    val completedToday = completedTodayTasks.size
+    val totalToday = todayTasks.size
+
+    val inProgressTasks = activeTodayTasks.filter { it.task.status == TaskStatus.IN_PROGRESS }
+        .sortedBy { it.task.effectiveDeadlineEpoch ?: Long.MAX_VALUE }
+
+    val overdueTasks = activeTodayTasks.filter {
+        it.task.status == TaskStatus.OVERDUE_PENDING_REASON ||
+                (it.task.effectiveDeadlineEpoch != null && it.task.effectiveDeadlineEpoch!! < todayStart)
+    }
+
+    val unstartedToday = activeTodayTasks.filter {
         it.task.status == TaskStatus.NOT_STARTED && !overdueTasks.contains(it)
     }
 
-    // Suggested focus task (highest priority among active)
+    // Suggested focus task (highest priority among active today tasks)
     val suggestedTask = inProgressTasks.firstOrNull()
         ?: unstartedToday.maxByOrNull { it.task.priority.ordinal }
 
@@ -274,33 +308,45 @@ fun LunaHomeDashboardView(
                     }
                 }
 
-                // XP Progress (Dynamic 50 XP per completed task, excluding abandoned/failed tasks)
-                val completedTaskXp = tasks.filter {
+                // XP Progress: Display total XP earned, level, and today's XP gain
+                val todayXp = completedTodayTasks.sumOf { it.task.xpValue.coerceAtLeast(50) }
+                val allCompletedXp = tasks.filter {
                     it.task.isCompleted &&
                     it.task.status != TaskStatus.FAILED_LOGGED
                 }.sumOf { it.task.xpValue.coerceAtLeast(50) }
-                val dynamicLevel = (completedTaskXp / 100) + 1
-                val dynamicLevelProgress = (completedTaskXp % 100) / 100f
-                val levelDescriptor = when {
-                    dynamicLevel <= 1 -> "Starter"
-                    dynamicLevel <= 3 -> "Flow"
-                    dynamicLevel <= 5 -> "Focus"
-                    dynamicLevel <= 8 -> "Ninja"
-                    else -> "Master"
-                }
+                val dynamicLevel = (allCompletedXp / 100) + 1
+                val dynamicLevelProgress = (allCompletedXp % 100) / 100f
+                val currentLevelXp = allCompletedXp % 100
 
                 Column(horizontalAlignment = Alignment.End) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "$allCompletedXp XP",
+                            color = palette.textPrimary,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (todayXp > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "(+$todayXp)",
+                                color = Color(0xFF10B981),
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                     Text(
-                        text = "Level $dynamicLevel: $levelDescriptor",
+                        text = "Level $dynamicLevel · ${currentLevelXp}/100",
                         color = palette.accent,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     LinearProgressIndicator(
                         progress = { dynamicLevelProgress.coerceAtLeast(0.06f) },
                         modifier = Modifier
-                            .width(80.dp)
+                            .width(84.dp)
                             .height(5.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = palette.accent,
@@ -618,10 +664,76 @@ fun LunaHomeDashboardView(
                     )
                 }
             }
+        } else if (activeTodayTasks.isEmpty() && totalToday > 0) {
+            // Celebratory "All Caught Up" state — do not pull tomorrow or future backlog tasks!
+            item(key = "home_all_done_banner") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(palette.surface)
+                        .border(1.dp, palette.accent.copy(alpha = 0.35f), RoundedCornerShape(20.dp))
+                        .padding(20.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "🎉", fontSize = 36.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "All Done for Today!",
+                            color = palette.textPrimary,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "You've finished all $completedToday of $totalToday task(s) for today! New tasks won't appear until tomorrow.",
+                            color = palette.textSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+        } else if (totalToday == 0) {
+            item(key = "home_no_tasks_today") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(palette.surface)
+                        .border(1.dp, palette.borderSubtle, RoundedCornerShape(20.dp))
+                        .padding(20.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(text = "✨", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "No Tasks for Today",
+                            color = palette.textPrimary,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Your schedule is clear! Quick-add a task above or plan ahead in the Tasks tab.",
+                            color = palette.textSecondary,
+                            fontSize = 13.sp,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
 
-        // Completed Tasks Section (animates smoothly when tasks are completed)
-        val completedTasks = tasks.filter { it.task.isCompleted }
+        // Completed Tasks Section: Show strictly tasks completed today
+        val completedTasks = completedTodayTasks
         if (completedTasks.isNotEmpty()) {
             item(key = "home_completed_header") {
                 Text(

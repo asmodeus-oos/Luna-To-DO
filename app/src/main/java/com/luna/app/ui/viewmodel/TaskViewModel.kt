@@ -490,7 +490,8 @@ class TaskViewModel(
 
     fun quickAddTask(title: String) {
         if (title.isNotBlank()) {
-            addTask(title = title.trim())
+            val todayEnd = getEndOfDayMillis(0)
+            addTask(title = title.trim(), dueDate = todayEnd)
         }
     }
 
@@ -1241,12 +1242,15 @@ class TaskViewModel(
 
         val byFilter = when (smartFilter) {
             SmartFilter.TODAY -> tasks.filter { item ->
-                item.task.dueDate == null || item.task.dueDate in todayStart..todayEnd || item.task.dueDate < todayStart
+                !item.task.isCompleted &&
+                (item.task.dueDate == null || item.task.dueDate in todayStart..todayEnd || item.task.dueDate < todayStart)
             }.sortedWith(chronologicalComparator)
             SmartFilter.TOMORROW -> tasks.filter { item ->
+                !item.task.isCompleted &&
                 item.task.dueDate != null && item.task.dueDate in tomorrowStart..tomorrowEnd
             }.sortedWith(chronologicalComparator)
             SmartFilter.THIS_WEEK -> tasks.filter { item ->
+                !item.task.isCompleted &&
                 item.task.dueDate != null && item.task.dueDate in todayStart..weekEnd
             }.sortedWith(chronologicalComparator)
             SmartFilter.OVERDUE -> tasks.filter { item ->
@@ -1256,18 +1260,18 @@ class TaskViewModel(
                     .thenBy { it.task.dueTime ?: "00:00" }
             )
             SmartFilter.HIGH_PRIORITY -> tasks.filter { item ->
-                item.task.priority == Priority.P1
+                !item.task.isCompleted && item.task.priority == Priority.P1
             }.sortedWith(chronologicalComparator)
             SmartFilter.DEEP_WORK -> tasks.filter { item ->
-                item.task.energyLevel == "HIGH"
+                !item.task.isCompleted && item.task.energyLevel == "HIGH"
             }.sortedWith(chronologicalComparator)
             SmartFilter.QUICK_WINS -> tasks.filter { item ->
-                item.task.energyLevel == "LOW" || item.task.estimatedMinutes in 1..15
+                !item.task.isCompleted && (item.task.energyLevel == "LOW" || item.task.estimatedMinutes in 1..15)
             }.sortedWith(chronologicalComparator)
             SmartFilter.PINNED -> tasks.filter { item ->
-                item.task.isPinned
+                !item.task.isCompleted && item.task.isPinned
             }.sortedWith(chronologicalComparator)
-            SmartFilter.ALL -> tasks.sortedWith(chronologicalComparator)
+            SmartFilter.ALL -> tasks.filter { !it.task.isCompleted }.sortedWith(chronologicalComparator)
             SmartFilter.COMPLETED -> tasks.filter { it.task.isCompleted }.sortedWith(
                 compareByDescending<TaskWithDetails> { it.task.completedAt ?: it.task.dueDate ?: 0L }
             )

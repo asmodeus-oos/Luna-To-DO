@@ -268,8 +268,8 @@ fun LunaAnalyticsView(
                         val count = tasks.count {
                             it.task.isCompleted &&
                             it.task.status != TaskStatus.FAILED_LOGGED &&
-                            it.task.completedAt != null &&
-                            it.task.completedAt in dayStart..dayEnd
+                            ((it.task.completedAt != null && it.task.completedAt in dayStart..dayEnd) ||
+                             (it.task.completedAt == null && offset == 0))
                         }
                         Pair(dayLabel, count)
                     }

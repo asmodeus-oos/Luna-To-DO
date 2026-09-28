@@ -260,24 +260,25 @@ fun HomeScreen(
                         )
 
                         Column(modifier = Modifier.fillMaxSize()) {
-                            // 1. View Mode Switcher Area
+                            // 1. View Mode Switcher Area (Matches LunaTemplatesBar styling)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 12.dp, vertical = 2.dp)
                                     .shadow(
                                         elevation = 6.dp,
-                                        shape = RoundedCornerShape(20.dp),
+                                        shape = RoundedCornerShape(18.dp),
                                         ambientColor = if (tasksIsLight) Color(0x10000000) else Color(0x30000000),
                                         spotColor = if (tasksIsLight) Color(0x15000000) else Color(0x40000000)
                                     )
-                                    .clip(RoundedCornerShape(20.dp))
+                                    .clip(RoundedCornerShape(18.dp))
                                     .background(tasksGlassFill)
                                     .border(
                                         width = 1.dp,
                                         brush = tasksGlassBorder,
-                                        shape = RoundedCornerShape(20.dp)
+                                        shape = RoundedCornerShape(18.dp)
                                     )
+                                    .padding(horizontal = 8.dp, vertical = 5.dp)
                             ) {
                                 LunaViewSelector(
                                     selectedView = uiState.selectedViewMode,

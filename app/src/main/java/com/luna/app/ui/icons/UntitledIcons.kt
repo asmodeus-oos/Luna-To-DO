@@ -952,10 +952,47 @@ object UntitledIcons {
             defaultHeight = 24.dp,
             viewportWidth = 24f,
             viewportHeight = 24f
-        ).addPath(
-            pathData = PathParser().parsePathString("M21 7H3C1.89543 7 1 7.89543 1 9V19C1 20.1046 1.89543 21 3 21H21C22.1046 21 23 20.1046 23 19V9C23 7.89543 22.1046 7 21 7ZM3 5H19V3H3C1.89543 3 1 3.89543 1 5V6.17C1.58 5.44 2.24 5 3 5ZM19 16C17.9 16 17 15.1 17 14C17 12.9 17.9 12 19 12C20.1 12 21 12.9 21 14C21 15.1 20.1 16 19 16Z").toNodes(),
-            fill = SolidColor(Color.Black)
-        ).build()
+        ).path(
+            stroke = SolidColor(Color.Black),
+            strokeLineWidth = 1.8f,
+            strokeLineCap = StrokeCap.Round,
+            strokeLineJoin = StrokeJoin.Round
+        ) {
+            // Main wallet body with rounded corners
+            moveTo(20f, 10f)
+            lineTo(20f, 7.5f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = false, 17.5f, 5f)
+            lineTo(5.5f, 5f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = false, 3f, 7.5f)
+            lineTo(3f, 17.5f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = false, 5.5f, 20f)
+            lineTo(17.5f, 20f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = false, 20f, 17.5f)
+            lineTo(20f, 15f)
+
+            // Top bill / card slot peek
+            moveTo(7f, 5f)
+            lineTo(7f, 3.8f)
+            arcTo(1.8f, 1.8f, 0f, isMoreThanHalf = false, isPositiveArc = true, 8.8f, 2f)
+            lineTo(15.2f, 2f)
+            arcTo(1.8f, 1.8f, 0f, isMoreThanHalf = false, isPositiveArc = true, 17f, 3.8f)
+            lineTo(17f, 5f)
+
+            // Rounded clasp pocket on right edge
+            moveTo(15f, 10f)
+            lineTo(19.5f, 10f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, 22f, 12.5f)
+            arcTo(2.5f, 2.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, 19.5f, 15f)
+            lineTo(15f, 15f)
+            arcTo(1.5f, 1.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, 13.5f, 13.5f)
+            lineTo(13.5f, 11.5f)
+            arcTo(1.5f, 1.5f, 0f, isMoreThanHalf = false, isPositiveArc = true, 15f, 10f)
+            close()
+
+            // Clasp button / lock dot
+            moveTo(18.5f, 12.5f)
+            lineTo(18.51f, 12.5f)
+        }.build()
     }
 
     val SlidersSettings: ImageVector by lazy {
